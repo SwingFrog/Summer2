@@ -19,13 +19,13 @@ public class JdbcProcessor {
 
     public void addDataSource(String topic, DataSource dataSource) {
         if (dataSource != dataSourceMap.putIfAbsent(topic, dataSource))
-            throw new RuntimeException("data source topic duplicate");
+            throw new JdbcRuntimeException("data source topic duplicate -> " + topic);
     }
 
     public void injectDataSource(AbstractJdbcPersistent<?> abstractJdbcPersistent) {
         DataSource dataSource = dataSourceMap.get(abstractJdbcPersistent.topic());
         if (dataSource == null)
-            throw new RuntimeException(String.format("data source topic[%s] not found", abstractJdbcPersistent.topic()));
+            throw new JdbcRuntimeException("data source topic not found -> " + abstractJdbcPersistent.topic());
         abstractJdbcPersistent.initialize(dataSource);
     }
 

@@ -48,7 +48,7 @@ public abstract class AbstractJdbcPersistent<T> {
             }
         }
         if (entityClass == null)
-            throw new RuntimeException(String.format("persistent initialize failure, %s", this.getClass().getName()));
+            throw new JdbcRuntimeException("persistent initialize failure, entity -> " + this.getClass().getName());
         Map<String, String> columnToPropertyOverrides = columnToPropertyOverrides();
         beanHandler = new BeanHandler<>(entityClass, new BasicRowProcessor(new PersistentBeanProcessor(columnToPropertyOverrides)));
         beanListHandler = new BeanListHandler<>(entityClass, new BasicRowProcessor(new PersistentBeanProcessor(columnToPropertyOverrides)));
@@ -71,7 +71,8 @@ public abstract class AbstractJdbcPersistent<T> {
         try {
             queryRunner.update(connection, sql, params);
         } catch (Exception e) {
-            throw new RuntimeException(String.format("persistent update failure, %s", this.getClass().getName()));
+            log.error(e.getMessage(), e);
+            throw new JdbcRuntimeException("persistent update failure, entity -> " + this.getClass().getName());
         } finally {
             try {
                 connection.close();
@@ -87,7 +88,8 @@ public abstract class AbstractJdbcPersistent<T> {
         try {
             queryRunner.batch(connection, sql, paramsList);
         } catch (Exception e) {
-            throw new RuntimeException(String.format("persistent batch update failure, %s", this.getClass().getName()));
+            log.error(e.getMessage(), e);
+            throw new JdbcRuntimeException("persistent batch update failure, entity -> " + this.getClass().getName());
         } finally {
             try {
                 connection.close();
@@ -107,7 +109,8 @@ public abstract class AbstractJdbcPersistent<T> {
         try {
             return queryRunner.query(connection, sql, beanHandler, params);
         } catch (Exception e) {
-            throw new RuntimeException(String.format("persistent get failure, %s", this.getClass().getName()));
+            log.error(e.getMessage(), e);
+            throw new JdbcRuntimeException("persistent get failure, entity -> " + this.getClass().getName());
         } finally {
             try {
                 connection.close();
@@ -123,7 +126,8 @@ public abstract class AbstractJdbcPersistent<T> {
         try {
             return queryRunner.query(connection, sql, beanListHandler, params);
         } catch (Exception e) {
-            throw new RuntimeException(String.format("persistent list failure, %s", this.getClass().getName()));
+            log.error(e.getMessage(), e);
+            throw new JdbcRuntimeException("persistent list failure, entity -> " + this.getClass().getName());
         } finally {
             try {
                 connection.close();
@@ -139,7 +143,8 @@ public abstract class AbstractJdbcPersistent<T> {
         try {
             return queryRunner.query(connection, sql, new ScalarHandler<>(), params);
         } catch (Exception e) {
-            throw new RuntimeException(String.format("persistent get value failure, %s", this.getClass().getName()));
+            log.error(e.getMessage(), e);
+            throw new JdbcRuntimeException("persistent get value failure, entity -> " + this.getClass().getName());
         } finally {
             try {
                 connection.close();
@@ -155,7 +160,8 @@ public abstract class AbstractJdbcPersistent<T> {
         try {
             return queryRunner.query(connection, sql, new ColumnListHandler<>(), params);
         } catch (Exception e) {
-            throw new RuntimeException(String.format("persistent list value failure, %s", this.getClass().getName()));
+            log.error(e.getMessage(), e);
+            throw new JdbcRuntimeException("persistent list value failure, entity -> " + this.getClass().getName());
         } finally {
             try {
                 connection.close();
@@ -168,11 +174,12 @@ public abstract class AbstractJdbcPersistent<T> {
 
     private Connection getConnection() {
         if (dataSource == null)
-            throw new RuntimeException(String.format("persistent not execute initialize method, %s", this.getClass().getName()));
+            throw new JdbcRuntimeException("persistent not execute initialize method, entity -> " + this.getClass().getName());
         try {
             return dataSource.getConnection();
         } catch (Exception e) {
-            throw new RuntimeException(String.format("persistent get connection failure, %s", this.getClass().getName()));
+            log.error(e.getMessage(), e);
+            throw new JdbcRuntimeException("persistent get connection failure, entity -> " + this.getClass().getName());
         }
     }
 

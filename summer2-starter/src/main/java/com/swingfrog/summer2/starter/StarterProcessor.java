@@ -34,7 +34,7 @@ public class StarterProcessor {
                 URL url = urls.nextElement();
                 String[] packs = getComponentPack(url);
                 if (packs == null || packs.length == 0) {
-                    throw new RuntimeException("not found property -> " + COMPONENT_SCAN + ", file -> " + url.getPath());
+                    throw new StarterRuntimeException("not found property -> " + COMPONENT_SCAN + ", file -> " + url.getPath());
                 }
                 for (String pack : packs) {
                     iocProcessor.scanComponent(pack);

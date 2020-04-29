@@ -21,7 +21,7 @@ public class Summer {
     public static void hot(Class<?> bootstrapClass, String defaultPropertyPath) {
         SummerApplication summerApplication = bootstrapClass.getAnnotation(SummerApplication.class);
         if (summerApplication == null)
-            throw new RuntimeException("bootstrap class need use @SummerApplication");
+            throw new StarterRuntimeException("bootstrap class need use @SummerApplication");
         IocProcessor iocProcessor = new IocProcessor();
         Arrays.stream(summerApplication.value()).forEach(iocProcessor::scanComponent);
         new StarterProcessor(iocProcessor).foundStarter();

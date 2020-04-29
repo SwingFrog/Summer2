@@ -194,7 +194,7 @@ public class ConfigurationProcessor {
                 final Class<?> targetClass = configuration.getClass();
                 Configuration annotation = targetClass.getDeclaredAnnotation(Configuration.class);
                 if (annotation == null)
-                    throw new RuntimeException("configuration class need use @Configuration");
+                    throw new ConfigurationRuntimeException("configuration class need use @Configuration -> " + targetClass.getName());
                 Map<String, Field> valueMap = findFieldValue(targetClass);
                 if (valueMap.isEmpty())
                     continue;
@@ -202,13 +202,13 @@ public class ConfigurationProcessor {
                 Properties properties = propertiesMap.computeIfAbsent(propertyPath, k -> {
                     InputStream inputStream = getPropertyInputStream(propertyPath);
                     if (inputStream == null)
-                        throw new RuntimeException("can not found configuration properties file -> " + propertyPath);
+                        throw new ConfigurationRuntimeException("can not found configuration properties file -> " + propertyPath);
                     inputStreams.add(inputStream);
                     Properties tempProperties = new Properties();
                     try {
                         tempProperties.load(inputStream);
                     } catch (IOException e) {
-                        throw new RuntimeException(e);
+                        throw new ConfigurationRuntimeException(e);
                     }
                     return tempProperties;
                 });
@@ -260,7 +260,7 @@ public class ConfigurationProcessor {
         valueMap.forEach((key, field) -> {
             if (properties.containsKey(key)) {
                 if (!convertMap.containsKey(field.getType()))
-                    throw new RuntimeException("can not convert type -> " + field.getType().getName());
+                    throw new ConfigurationRuntimeException("can not convert type -> " + field.getType().getName());
                 String propertyValue = properties.getProperty(key);
                 if (propertyValue.isEmpty())
                     return;

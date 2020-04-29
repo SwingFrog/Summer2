@@ -29,19 +29,19 @@ public class TableMetaParser {
     public static TableMeta parse(Class<?> entityClass) {
         Table table = entityClass.getDeclaredAnnotation(Table.class);
         if (table == null)
-            throw new RuntimeException(String.format("not found @Table, %s", entityClass.getName()));
+            throw new MetaRuntimeException("not found @Table, entity -> " + entityClass.getName());
         List<Field> fields = Lists.newLinkedList();
         collectField(fields, entityClass);
         if (fields.isEmpty())
-            throw new RuntimeException(String.format("not found @Column field, %s", entityClass.getName()));
+            throw new MetaRuntimeException("not found @Column field, entity -> " + entityClass.getName());
         List<Field> prePrimaryKeyFields = fields.stream()
                 .filter(field -> field.isAnnotationPresent(PrimaryKey.class))
                 .collect(Collectors.toList());
         if (prePrimaryKeyFields.size() > 1)
-            throw new RuntimeException(String.format("@PrimaryKey field duplication, %s", entityClass.getName()));
+            throw new MetaRuntimeException("@PrimaryKey field duplication, entity -> " + entityClass.getName());
         Field primaryKey = Iterables.getFirst(prePrimaryKeyFields, null);
         if (primaryKey == null)
-            throw new RuntimeException(String.format("not found @PrimaryKey field, %s", entityClass.getName()));
+            throw new MetaRuntimeException("not found @PrimaryKey field, entity -> " + entityClass.getName());
         fields.remove(primaryKey);
         PrimaryKeyMeta primaryKeyMeta = parsePrimaryKey(primaryKey);
         List<ColumnMeta> columnMetas = fields.stream().map(TableMetaParser::parseColumn).collect(ImmutableList.toImmutableList());
@@ -49,10 +49,10 @@ public class TableMetaParser {
         Map<String, ColumnMeta> fieldToColumnMetas = columnMetas.stream().collect(ImmutableMap.toImmutableMap(ColumnMeta::getFieldName, v -> v));
         indexMetas.stream().flatMap(indexMeta -> indexMeta.getFields().stream()).forEach(field -> {
             if (!fieldToColumnMetas.containsKey(field))
-                throw new RuntimeException(String.format("not found index field[%s], %s", field, entityClass.getName()));
+                throw new MetaRuntimeException("not found index field -> " + field + ", entity -> " + entityClass.getName());
         });
         return TableMeta.Builder.newBuilder()
-                .name(table.name().length() > 0 ? table.name() : entityClass.getSimpleName())
+                .name(table.name().isEmpty() ? entityClass.getSimpleName() : table.name())
                 .comment(table.comment())
                 .charset(table.charset())
                 .collate(table.collate())
@@ -76,13 +76,14 @@ public class TableMetaParser {
 
     private static ColumnMeta parseColumn(Field field) {
         Column column = field.getDeclaredAnnotation(Column.class);
+        ColumnType columnType = column.type() == ColumnType.DEFAULT ? getColumnType(field, column) : column.type();
         return ColumnMeta.Builder.newBuilder()
-                .name(column.name().length() > 0 ? column.name() : field.getName())
+                .name(column.name().isEmpty() ? field.getName() : column.name())
                 .comment(column.comment())
-                .type(column.type() != ColumnType.DEFAULT ? column.type() : getColumnType(field, column))
+                .type(columnType)
                 .readOnly(column.readOnly())
                 .length(column.length())
-                .defaultValue(getDefaultValue(field))
+                .defaultValue(getDefaultValue(field, columnType))
                 .field(field)
                 .fieldName(field.getName())
                 .build();
@@ -98,7 +99,7 @@ public class TableMetaParser {
 
     private static IndexMeta parseIndex(Index index) {
         return IndexMeta.Builder.newBuilder()
-                .name(index.name().length() > 0 ? index.name() : "idx_" + String.join("_", index.fields()))
+                .name(index.name().isEmpty() ? "idx_" + String.join("_", index.fields()) : index.name())
                 .fields(ImmutableSet.copyOf(index.fields()))
                 .type(index.type())
                 .build();
@@ -107,7 +108,7 @@ public class TableMetaParser {
     private static ColumnType getColumnType(Field field, Column column) {
         Class<?> type = field.getType();
         if (type == boolean.class || type == Boolean.class)
-            return ColumnType.BIT;
+            return ColumnType.TINYINT;
         if (type == byte.class || type == Byte.class)
             return ColumnType.TINYINT;
         if (type == short.class || type == Short.class)
@@ -134,7 +135,11 @@ public class TableMetaParser {
         return ColumnType.TEXT;
     }
 
-    private static String getDefaultValue(Field field) {
+    private static String getDefaultValue(Field field, ColumnType columnType) {
+        if (columnType == ColumnType.BLOB || columnType == ColumnType.LONGBLOB)
+            return null;
+        if (columnType == ColumnType.TEXT || columnType == ColumnType.LONGTEXT)
+            return null;
         Class<?> type = field.getType();
         if (type == boolean.class)
             return "0";

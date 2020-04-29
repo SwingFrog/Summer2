@@ -5,7 +5,6 @@ package com.swingfrog.summer2.dao.constant;
  */
 public enum ColumnType {
     DEFAULT,
-    BIT,
     TINYINT,
     SMALLINT,
     INT,

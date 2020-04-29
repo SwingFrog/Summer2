@@ -40,9 +40,9 @@ public class IocProcessor implements Container {
     public void registerClass(Class<?> targetClass) {
         Objects.requireNonNull(targetClass);
         if (targetClass.isInterface())
-            throw new RuntimeException("target class can not be interface");
+            throw new IocRuntimeException("target class can not be interface -> " + targetClass.getName());
         if (targetClass.isAnnotation())
-            throw new RuntimeException("target class can not be annotation");
+            throw new IocRuntimeException("target class can not be annotation -> " + targetClass.getName());
         registers.add(targetClass);
     }
 
@@ -150,7 +150,7 @@ public class IocProcessor implements Container {
                 wa.getWaitAutowireFields().stream().map(Field::getName).collect(Collectors.toSet()),
                 wa.getWaitAutowireMethod().stream().map(Method::getName).collect(Collectors.toSet()),
                 wa.getWaitCreateBeanMethod().stream().map(Method::getName).collect(Collectors.toSet())));
-        throw new RuntimeException("autowire failure, please check dependencies");
+        throw new IocRuntimeException("autowire failure, please avoid complex cross dependencies");
     }
     
     private void tryAutowireField() {
