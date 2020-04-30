@@ -33,6 +33,10 @@ public abstract class AbstractJdbcRepository<K, V> extends AbstractJdbcPersisten
     void initialize(DataSource dataSource) {
         super.initialize(dataSource);
         tableMeta = TableMetaParser.parse(getEntityClass());
+        createTable();
+        updateColumn();
+        updateIndex();
+        updatePrimaryKey();
     }
 
     private void createTable() {
@@ -44,6 +48,10 @@ public abstract class AbstractJdbcRepository<K, V> extends AbstractJdbcPersisten
     }
 
     private void updateIndex() {
+
+    }
+
+    private void updatePrimaryKey() {
 
     }
 
