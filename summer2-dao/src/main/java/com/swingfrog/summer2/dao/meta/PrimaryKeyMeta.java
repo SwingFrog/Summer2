@@ -8,7 +8,15 @@ public class PrimaryKeyMeta extends ColumnMeta {
     private final boolean autoIncrement;
 
     public PrimaryKeyMeta(ColumnMeta columnMeta, boolean autoIncrement) {
-        super(columnMeta.getName(), columnMeta.getComment(), columnMeta.getType(), columnMeta.isReadOnly(), columnMeta.getLength(), columnMeta.getDefaultValue(), columnMeta.getField(), columnMeta.getFieldName());
+        super(columnMeta.getName(),
+                columnMeta.getComment(),
+                columnMeta.getType(),
+                columnMeta.isReadOnly(),
+                columnMeta.getLength(),
+                columnMeta.getDefaultValue(),
+                columnMeta.getField(),
+                columnMeta.getFieldName(),
+                true);
         this.autoIncrement = autoIncrement;
     }
 

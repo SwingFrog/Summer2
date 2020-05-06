@@ -7,6 +7,8 @@ import org.apache.commons.dbutils.QueryRunner;
 import org.apache.commons.dbutils.handlers.BeanHandler;
 import org.apache.commons.dbutils.handlers.BeanListHandler;
 import org.apache.commons.dbutils.handlers.ColumnListHandler;
+import org.apache.commons.dbutils.handlers.MapHandler;
+import org.apache.commons.dbutils.handlers.MapListHandler;
 import org.apache.commons.dbutils.handlers.ScalarHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -138,6 +140,40 @@ public abstract class AbstractJdbcPersistent<T> {
         }
     }
 
+    protected <V> V getEntity(String sql, Class<V> entityClass, Object... params) {
+        Connection connection = getConnection();
+        try {
+            return queryRunner.query(connection, sql, new BeanHandler<>(entityClass), params);
+        } catch (Exception e) {
+            log.error(e.getMessage(), e);
+            throw new JdbcRuntimeException("persistent get by class failure, entity -> " + entityClass.getName());
+        } finally {
+            try {
+                connection.close();
+            } catch (SQLException e) {
+                log.error(e.getMessage(), e);
+            }
+            showSql(sql, params);
+        }
+    }
+
+    protected <V> List<V> listEntity(String sql, Class<V> entityClass, Object... params) {
+        Connection connection = getConnection();
+        try {
+            return queryRunner.query(connection, sql, new BeanListHandler<>(entityClass), params);
+        } catch (Exception e) {
+            log.error(e.getMessage(), e);
+            throw new JdbcRuntimeException("persistent list by class failure, entity -> " + entityClass.getName());
+        } finally {
+            try {
+                connection.close();
+            } catch (SQLException e) {
+                log.error(e.getMessage(), e);
+            }
+            showSql(sql, params);
+        }
+    }
+
     protected <V> V getValue(String sql, Object... params) {
         Connection connection = getConnection();
         try {
@@ -162,6 +198,40 @@ public abstract class AbstractJdbcPersistent<T> {
         } catch (Exception e) {
             log.error(e.getMessage(), e);
             throw new JdbcRuntimeException("persistent list value failure, entity -> " + this.getClass().getName());
+        } finally {
+            try {
+                connection.close();
+            } catch (SQLException e) {
+                log.error(e.getMessage(), e);
+            }
+            showSql(sql, params);
+        }
+    }
+
+    protected Map<String, Object> getMap(String sql, Object... params) {
+        Connection connection = getConnection();
+        try {
+            return queryRunner.query(connection, sql, new MapHandler(), params);
+        } catch (Exception e) {
+            log.error(e.getMessage(), e);
+            throw new JdbcRuntimeException("persistent get map failure, entity -> " + this.getClass().getName());
+        } finally {
+            try {
+                connection.close();
+            } catch (SQLException e) {
+                log.error(e.getMessage(), e);
+            }
+            showSql(sql, params);
+        }
+    }
+
+    protected List<Map<String, Object>> listMap(String sql, Object... params) {
+        Connection connection = getConnection();
+        try {
+            return queryRunner.query(connection, sql, new MapListHandler(), params);
+        } catch (Exception e) {
+            log.error(e.getMessage(), e);
+            throw new JdbcRuntimeException("persistent list map failure, entity -> " + this.getClass().getName());
         } finally {
             try {
                 connection.close();

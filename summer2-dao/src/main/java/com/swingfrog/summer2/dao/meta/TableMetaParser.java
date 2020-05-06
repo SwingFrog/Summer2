@@ -136,10 +136,12 @@ public class TableMetaParser {
     }
 
     private static String getDefaultValue(Field field, ColumnType columnType) {
-        if (columnType == ColumnType.BLOB || columnType == ColumnType.LONGBLOB)
+        if (columnType == ColumnType.BLOB ||
+                columnType == ColumnType.TEXT ||
+                columnType == ColumnType.LONGBLOB ||
+                columnType == ColumnType.LONGTEXT) {
             return null;
-        if (columnType == ColumnType.TEXT || columnType == ColumnType.LONGTEXT)
-            return null;
+        }
         Class<?> type = field.getType();
         if (type == boolean.class)
             return "0";

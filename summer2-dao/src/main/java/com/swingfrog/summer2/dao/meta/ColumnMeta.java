@@ -17,9 +17,10 @@ public class ColumnMeta {
     private final String defaultValue;
     private final Field field;
     private final String fieldName;
+    private final boolean notNull;
 
     public ColumnMeta(String name, String comment, ColumnType type, boolean readOnly, int length, String defaultValue
-            , Field field, String fieldName) {
+            , Field field, String fieldName, boolean notNull) {
         this.name = name;
         this.comment = comment;
         this.type = type;
@@ -28,6 +29,7 @@ public class ColumnMeta {
         this.defaultValue = defaultValue;
         this.field = field;
         this.fieldName = fieldName;
+        this.notNull = notNull;
     }
 
     public String getName() {
@@ -62,6 +64,10 @@ public class ColumnMeta {
         return fieldName;
     }
 
+    public boolean isNotNull() {
+        return notNull;
+    }
+
     public static final class Builder {
         private String name;
         private String comment;
@@ -71,6 +77,7 @@ public class ColumnMeta {
         private String defaultValue;
         private Field field;
         private String fieldName;
+        private boolean notNull;
 
         private Builder() {}
 
@@ -116,6 +123,11 @@ public class ColumnMeta {
             return this;
         }
 
-        public ColumnMeta build() { return new ColumnMeta(name, comment, type, readOnly, length, defaultValue, field, fieldName); }
+        public Builder notNull(boolean notNull) {
+            this.notNull = notNull;
+            return this;
+        }
+
+        public ColumnMeta build() { return new ColumnMeta(name, comment, type, readOnly, length, defaultValue, field, fieldName, notNull); }
     }
 }

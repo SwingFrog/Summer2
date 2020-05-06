@@ -33,26 +33,25 @@ public abstract class AbstractJdbcRepository<K, V> extends AbstractJdbcPersisten
     void initialize(DataSource dataSource) {
         super.initialize(dataSource);
         tableMeta = TableMetaParser.parse(getEntityClass());
-        createTable();
-        updateColumn();
-        updateIndex();
-        updatePrimaryKey();
+        if (existsTable()) {
+            updateTable();
+        } else {
+            createTable();
+        }
+    }
+
+    private boolean existsTable() {
+        return getValue(JdbcSqlGenerator.existsTable(tableMeta)) != null;
     }
 
     private void createTable() {
-
+        update(JdbcSqlGenerator.createTable(tableMeta));
     }
 
-    private void updateColumn() {
-
-    }
-
-    private void updateIndex() {
-
-    }
-
-    private void updatePrimaryKey() {
-
+    private void updateTable() {
+        // update column
+        // update index
+        // update primary key
     }
 
     @Override
