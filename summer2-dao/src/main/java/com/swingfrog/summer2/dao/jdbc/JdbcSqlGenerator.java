@@ -6,6 +6,10 @@ import com.swingfrog.summer2.dao.meta.IndexMeta;
 import com.swingfrog.summer2.dao.meta.PrimaryKeyMeta;
 import com.swingfrog.summer2.dao.meta.TableMeta;
 
+import java.util.Iterator;
+import java.util.List;
+import java.util.stream.Collectors;
+
 /**
  * @author: toke
  */
@@ -31,13 +35,9 @@ public class JdbcSqlGenerator {
         StringBuilder builder = new StringBuilder();
         builder.append(String.format("CREATE TABLE `%s` (\n", tableMeta.getName()));
         builder.append(String.format(" %s,\n", createColumn(tableMeta.getPrimaryKeyMeta())));
-        for (ColumnMeta columnMeta : tableMeta.getColumnMetas()) {
-            builder.append(String.format(" %s,\n", createColumn(columnMeta)));
-        }
+        tableMeta.getColumnMetas().forEach(columnMeta -> builder.append(String.format(" %s,\n", createColumn(columnMeta))));
         builder.append(String.format(" PRIMARY KEY (`%s`)\n", tableMeta.getPrimaryKeyMeta().getName()));
-        for (IndexMeta indexMeta :tableMeta.getIndexMetas()) {
-            builder.append(String.format(",\n %s", createIndex(indexMeta)));
-        }
+        tableMeta.getIndexMetas().forEach(indexMeta ->  builder.append(String.format(",\n %s", createIndex(indexMeta))));
         builder.append(String.format("\n) DEFAULT CHARACTER SET = %s COLLATE = %s COMMENT = '%s';",
                 tableMeta.getCharset(), tableMeta.getCollate(), tableMeta.getComment()));
         return builder.toString();
@@ -49,9 +49,9 @@ public class JdbcSqlGenerator {
         if (columnMeta.getType() == ColumnType.CHAR || columnMeta.getType() == ColumnType.VARCHAR) {
             builder.append(String.format("%s(%s) ", columnMeta.getType().name(), columnMeta.getLength()));
         } else if (columnMeta.getType() == ColumnType.FLOAT) {
-            builder.append(String.format("%s(11,%s) ", columnMeta.getType().name(), columnMeta.getLength() > 11 ? 2 : columnMeta.getLength()));
+            builder.append(String.format("%s(11,%s) ", columnMeta.getType().name(), columnMeta.getLength()));
         } else if (columnMeta.getType() == ColumnType.DOUBLE) {
-            builder.append(String.format("%s(22,%s) ", columnMeta.getType().name(), columnMeta.getLength() > 11 ? 2 : columnMeta.getLength()));
+            builder.append(String.format("%s(22,%s) ", columnMeta.getType().name(), columnMeta.getLength()));
         } else {
             builder.append(String.format("%s ", columnMeta.getType().name()));
         }
@@ -71,15 +71,15 @@ public class JdbcSqlGenerator {
         return String.format("%s INDEX `%s` (`%s`)",
                 indexMeta.getType().name(),
                 indexMeta.getName(),
-                String.join("`,`", indexMeta.getFields()));
+                String.join("`,`", indexMeta.getColumns()));
     }
 
     public static String addColumn(TableMeta tableMeta, ColumnMeta columnMeta) {
         return String.format("ALTER TABLE `%s` ADD COLUMN %s;", tableMeta.getName(), createColumn(columnMeta));
     }
 
-    public static String changeColumn(TableMeta tableMeta, String originalColumnName, ColumnMeta columnMeta) {
-        return String.format("ALTER TABLE `%s` CHANGE COLUMN `%s` %s;", tableMeta.getName(), originalColumnName, createColumn(columnMeta));
+    public static String changeColumn(TableMeta tableMeta, ColumnMeta columnMeta) {
+        return String.format("ALTER TABLE `%s` MODIFY COLUMN %s;", tableMeta.getName(), createColumn(columnMeta));
     }
 
     public static String addIndex(TableMeta tableMeta, IndexMeta indexMeta) {
@@ -98,4 +98,78 @@ public class JdbcSqlGenerator {
         return String.format("ALTER TABLE `%s` DROP PRIMARY KEY;", tableMeta.getName());
     }
 
+    public static String insert(TableMeta tableMeta) {
+        StringBuilder builder = new StringBuilder();
+        builder.append(String.format("INSERT INTO `%s`(", tableMeta.getName()));
+        builder.append(String.format("`%s`,`", tableMeta.getPrimaryKeyMeta().getName()));
+        builder.append(tableMeta.getColumnMetas().stream().map(ColumnMeta::getName).collect(Collectors.joining("`,`")));
+        builder.append("`) VALUES(?");
+        tableMeta.getColumnMetas().forEach(columnMeta -> builder.append(",?"));
+        builder.append(");");
+        return builder.toString();
+    }
+
+    public static String delete(TableMeta tableMeta) {
+        return String.format("DELETE FROM `%s` WHERE `%s` = ?;", tableMeta.getName(), tableMeta.getPrimaryKeyMeta().getName());
+    }
+
+    public static String deleteAll(TableMeta tableMeta) {
+        return String.format("DELETE FROM `%s`;", tableMeta.getName());
+    }
+
+    public static String update(TableMeta tableMeta) {
+        StringBuilder builder = new StringBuilder();
+        builder.append(String.format("UPDATE `%s`", tableMeta.getName()));
+        if (!tableMeta.getColumnMetas().isEmpty()) {
+            builder.append(" SET");
+            Iterator<ColumnMeta> iterator = tableMeta.getColumnMetas().iterator();
+            if (iterator.hasNext()) {
+                for (;;) {
+                    ColumnMeta columnMeta = iterator.next();
+                    if (columnMeta.isReadOnly()) {
+                        if (!iterator.hasNext()) {
+                            break;
+                        }
+                    } else{
+                        builder.append(String.format(" `%s` = ?", columnMeta.getName()));
+                        if (iterator.hasNext()) {
+                            builder.append(",");
+                        } else {
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        builder.append(String.format(" WHERE `%s` = ?;", tableMeta.getPrimaryKeyMeta().getName()));
+        return builder.toString();
+    }
+
+    public static String select(TableMeta tableMeta) {
+        return String.format("SELECT * FROM `%s` WHERE `%s` = ?;", tableMeta.getName(), tableMeta.getPrimaryKeyMeta().getName());
+    }
+
+    public static String selectOption(TableMeta tableMeta, List<String> fields) {
+        StringBuilder builder = new StringBuilder();
+        builder.append(String.format("SELECT * FROM `%s`", tableMeta.getName()));
+        Iterator<String> iterator = fields.iterator();
+        if (iterator.hasNext()) {
+            builder.append(" WHERE");
+            for (;;) {
+                String field = iterator.next();
+                builder.append(String.format(" `%s` = ?", field));
+                if (iterator.hasNext()) {
+                    builder.append(" and");
+                } else {
+                    break;
+                }
+            }
+        }
+        builder.append(";");
+        return builder.toString();
+    }
+
+    public static String selectAll(TableMeta tableMeta) {
+        return String.format("SELECT * FROM `%s`;", tableMeta.getName());
+    }
 }

@@ -45,8 +45,8 @@ public class TableMetaParser {
         fields.remove(primaryKey);
         PrimaryKeyMeta primaryKeyMeta = parsePrimaryKey(primaryKey);
         List<ColumnMeta> columnMetas = fields.stream().map(TableMetaParser::parseColumn).collect(ImmutableList.toImmutableList());
-        Set<IndexMeta> indexMetas = Arrays.stream(table.index()).map(TableMetaParser::parseIndex).collect(ImmutableSet.toImmutableSet());
         Map<String, ColumnMeta> fieldToColumnMetas = columnMetas.stream().collect(ImmutableMap.toImmutableMap(ColumnMeta::getFieldName, v -> v));
+        Set<IndexMeta> indexMetas = Arrays.stream(table.index()).map(index -> parseIndex(fieldToColumnMetas, index)).collect(ImmutableSet.toImmutableSet());
         indexMetas.stream().flatMap(indexMeta -> indexMeta.getFields().stream()).forEach(field -> {
             if (!fieldToColumnMetas.containsKey(field))
                 throw new MetaRuntimeException("not found index field -> " + field + ", entity -> " + entityClass.getName());
@@ -82,7 +82,7 @@ public class TableMetaParser {
                 .comment(column.comment())
                 .type(columnType)
                 .readOnly(column.readOnly())
-                .length(column.length())
+                .length(getColumnLength(column, columnType))
                 .defaultValue(getDefaultValue(field, columnType))
                 .field(field)
                 .fieldName(field.getName())
@@ -97,11 +97,12 @@ public class TableMetaParser {
                 .build();
     }
 
-    private static IndexMeta parseIndex(Index index) {
+    private static IndexMeta parseIndex(Map<String, ColumnMeta> fieldToColumnMetas, Index index) {
         return IndexMeta.Builder.newBuilder()
                 .name(index.name().isEmpty() ? "idx_" + String.join("_", index.fields()) : index.name())
-                .fields(ImmutableSet.copyOf(index.fields()))
+                .columns(Arrays.stream(index.fields()).map(filed -> fieldToColumnMetas.get(filed).getName()).collect(ImmutableSet.toImmutableSet()))
                 .type(index.type())
+                .fields(ImmutableSet.copyOf(index.fields()))
                 .build();
     }
 
@@ -133,6 +134,15 @@ public class TableMetaParser {
         if (length <= 16383)
             return ColumnType.VARCHAR;
         return ColumnType.TEXT;
+    }
+
+    private static int getColumnLength(Column column, ColumnType columnType) {
+        if (columnType == ColumnType.CHAR || columnType == ColumnType.VARCHAR) {
+            return column.length();
+        } else if (columnType == ColumnType.FLOAT || columnType == ColumnType.DOUBLE) {
+            return column.length() > 11 ? 2 : column.length();
+        }
+        return 0;
     }
 
     private static String getDefaultValue(Field field, ColumnType columnType) {
