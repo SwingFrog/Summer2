@@ -149,7 +149,7 @@ public class JdbcSqlGenerator {
         return String.format("SELECT * FROM `%s` WHERE `%s` = ?;", tableMeta.getName(), tableMeta.getPrimaryKeyMeta().getName());
     }
 
-    public static String selectOption(TableMeta tableMeta, List<String> fields) {
+    public static String selectOptional(TableMeta tableMeta, List<String> fields) {
         StringBuilder builder = new StringBuilder();
         builder.append(String.format("SELECT * FROM `%s`", tableMeta.getName()));
         Iterator<String> iterator = fields.iterator();
@@ -157,7 +157,7 @@ public class JdbcSqlGenerator {
             builder.append(" WHERE");
             for (;;) {
                 String field = iterator.next();
-                builder.append(String.format(" `%s` = ?", field));
+                builder.append(String.format(" `%s` = ?", tableMeta.getFieldToColumnMetas().get(field).getName()));
                 if (iterator.hasNext()) {
                     builder.append(" and");
                 } else {

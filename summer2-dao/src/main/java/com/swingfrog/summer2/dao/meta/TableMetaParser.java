@@ -12,6 +12,7 @@ import com.swingfrog.summer2.dao.annotation.Table;
 import com.swingfrog.summer2.dao.constant.ColumnType;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Type;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Collection;
@@ -44,6 +45,9 @@ public class TableMetaParser {
             throw new MetaRuntimeException("not found @PrimaryKey field, entity -> " + entityClass.getName());
         fields.remove(primaryKey);
         PrimaryKeyMeta primaryKeyMeta = parsePrimaryKey(primaryKey);
+        if (primaryKeyMeta.isAutoIncrement() && isNotIntOrLong(primaryKey.getType())) {
+            throw new MetaRuntimeException("auto increment primary key field type must be int or long, entity -> " + entityClass.getName());
+        }
         List<ColumnMeta> columnMetas = fields.stream().map(TableMetaParser::parseColumn).collect(ImmutableList.toImmutableList());
         Map<String, ColumnMeta> fieldToColumnMetas = columnMetas.stream().collect(ImmutableMap.toImmutableMap(ColumnMeta::getFieldName, v -> v));
         Set<IndexMeta> indexMetas = Arrays.stream(table.index()).map(index -> parseIndex(fieldToColumnMetas, index)).collect(ImmutableSet.toImmutableSet());
@@ -172,5 +176,9 @@ public class TableMetaParser {
         if (Map.class.isAssignableFrom(type))
             return "{}";
         return null;
+    }
+
+    private static boolean isNotIntOrLong(Type type) {
+        return type != int.class && type != Integer.class && type != long.class && type != Long.class;
     }
 }
