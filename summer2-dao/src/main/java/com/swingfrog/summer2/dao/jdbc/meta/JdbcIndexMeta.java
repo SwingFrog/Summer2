@@ -1,9 +1,8 @@
 package com.swingfrog.summer2.dao.jdbc.meta;
 
+import com.google.common.collect.ImmutableSet;
 import com.swingfrog.summer2.dao.constant.IndexType;
 import com.swingfrog.summer2.dao.meta.IndexMeta;
-
-import java.util.Set;
 
 /**
  * @author: toke
@@ -11,10 +10,10 @@ import java.util.Set;
 public class JdbcIndexMeta {
 
     private final String name;
-    private final Set<String> columns;
+    private final ImmutableSet<String> columns;
     private final IndexType type;
 
-    public JdbcIndexMeta(String name, Set<String> columns, IndexType type) {
+    public JdbcIndexMeta(String name, ImmutableSet<String> columns, IndexType type) {
         this.name = name;
         this.columns = columns;
         this.type = type;
@@ -24,7 +23,7 @@ public class JdbcIndexMeta {
         return name;
     }
 
-    public Set<String> getColumns() {
+    public ImmutableSet<String> getColumns() {
         return columns;
     }
 
@@ -34,7 +33,7 @@ public class JdbcIndexMeta {
 
     public static final class Builder {
         private String name;
-        private Set<String> columns;
+        private ImmutableSet<String> columns;
         private IndexType type;
 
         private Builder() {}
@@ -46,7 +45,7 @@ public class JdbcIndexMeta {
             return this;
         }
 
-        public Builder columns(Set<String> columns) {
+        public Builder columns(ImmutableSet<String> columns) {
             this.columns = columns;
             return this;
         }

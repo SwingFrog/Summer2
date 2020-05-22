@@ -18,6 +18,7 @@
         <module>summer2-core</module>
         <module>summer2-starter</module>
         <module>summer2-dao</module>
+        <module>summer2-dao-starter</module>
     </modules>
 
     <build>

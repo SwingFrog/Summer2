@@ -1,8 +1,8 @@
 package com.swingfrog.summer2.dao.meta;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 
 /**
  * @author: toke
@@ -14,14 +14,14 @@ public class TableMeta {
     private final String charset;
     private final String collate;
 
-    private final Set<IndexMeta> indexMetas;
+    private final ImmutableSet<IndexMeta> indexMetas;
     private final PrimaryKeyMeta primaryKeyMeta;
-    private final List<ColumnMeta> columnMetas;
-    private final Map<String, ColumnMeta> fieldToColumnMetas;
+    private final ImmutableList<ColumnMeta> columnMetas;
+    private final ImmutableMap<String, ColumnMeta> fieldToColumnMetas;
 
-    public TableMeta(String name, String comment, String charset, String collate, Set<IndexMeta> indexMetas,
-                     PrimaryKeyMeta primaryKeyMeta, List<ColumnMeta> columnMetas,
-                     Map<String, ColumnMeta> fieldToColumnMetas) {
+    public TableMeta(String name, String comment, String charset, String collate, ImmutableSet<IndexMeta> indexMetas,
+                     PrimaryKeyMeta primaryKeyMeta, ImmutableList<ColumnMeta> columnMetas, ImmutableMap<String,
+            ColumnMeta> fieldToColumnMetas) {
         this.name = name;
         this.comment = comment;
         this.charset = charset;
@@ -48,7 +48,7 @@ public class TableMeta {
         return collate;
     }
 
-    public Set<IndexMeta> getIndexMetas() {
+    public ImmutableSet<IndexMeta> getIndexMetas() {
         return indexMetas;
     }
 
@@ -56,11 +56,11 @@ public class TableMeta {
         return primaryKeyMeta;
     }
 
-    public List<ColumnMeta> getColumnMetas() {
+    public ImmutableList<ColumnMeta> getColumnMetas() {
         return columnMetas;
     }
 
-    public Map<String, ColumnMeta> getFieldToColumnMetas() {
+    public ImmutableMap<String, ColumnMeta> getFieldToColumnMetas() {
         return fieldToColumnMetas;
     }
 
@@ -69,10 +69,10 @@ public class TableMeta {
         private String comment;
         private String charset;
         private String collate;
-        private Set<IndexMeta> indexMetas;
+        private ImmutableSet<IndexMeta> indexMetas;
         private PrimaryKeyMeta primaryKeyMeta;
-        private List<ColumnMeta> columnMetas;
-        private Map<String, ColumnMeta> fieldToColumnMetas;
+        private ImmutableList<ColumnMeta> columnMetas;
+        private ImmutableMap<String, ColumnMeta> fieldToColumnMetas;
 
         private Builder() {}
 
@@ -98,7 +98,7 @@ public class TableMeta {
             return this;
         }
 
-        public Builder indexMetas(Set<IndexMeta> indexMetas) {
+        public Builder indexMetas(ImmutableSet<IndexMeta> indexMetas) {
             this.indexMetas = indexMetas;
             return this;
         }
@@ -108,12 +108,12 @@ public class TableMeta {
             return this;
         }
 
-        public Builder columnMetas(List<ColumnMeta> columnMetas) {
+        public Builder columnMetas(ImmutableList<ColumnMeta> columnMetas) {
             this.columnMetas = columnMetas;
             return this;
         }
 
-        public Builder fieldToColumnMetas(Map<String, ColumnMeta> fieldToColumnMetas) {
+        public Builder fieldToColumnMetas(ImmutableMap<String, ColumnMeta> fieldToColumnMetas) {
             this.fieldToColumnMetas = fieldToColumnMetas;
             return this;
         }

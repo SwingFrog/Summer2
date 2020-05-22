@@ -6,8 +6,8 @@ import com.swingfrog.summer2.dao.meta.IndexMeta;
 import com.swingfrog.summer2.dao.meta.PrimaryKeyMeta;
 import com.swingfrog.summer2.dao.meta.TableMeta;
 
+import java.util.Collection;
 import java.util.Iterator;
-import java.util.List;
 import java.util.stream.Collectors;
 
 /**
@@ -149,7 +149,7 @@ public class JdbcSqlGenerator {
         return String.format("SELECT * FROM `%s` WHERE `%s` = ?;", tableMeta.getName(), tableMeta.getPrimaryKeyMeta().getName());
     }
 
-    public static String selectOptional(TableMeta tableMeta, List<String> fields) {
+    public static String selectOptional(TableMeta tableMeta, Collection<String> fields) {
         StringBuilder builder = new StringBuilder();
         builder.append(String.format("SELECT * FROM `%s`", tableMeta.getName()));
         Iterator<String> iterator = fields.iterator();

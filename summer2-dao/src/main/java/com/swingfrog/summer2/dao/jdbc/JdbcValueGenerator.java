@@ -9,6 +9,7 @@ import com.swingfrog.summer2.dao.meta.TableMeta;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Type;
+import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -120,15 +121,10 @@ public class JdbcValueGenerator {
         }
     }
 
-    public static List<String> listValidFieldByOptional(TableMeta tableMeta, Map<String, Object> optional) {
-        return optional.keySet().stream().filter(tableMeta.getFieldToColumnMetas()::containsKey).collect(Collectors.toList());
-    }
-
-    public static Object[] listValidValueByOptional(TableMeta tableMeta, Map<String, Object> optional, List<String> fields) {
-        return fields.stream().map(field -> {
-            ColumnMeta columnMeta = tableMeta.getFieldToColumnMetas().get(field);
-            return convert(optional.get(field), columnMeta.getField().getType());
-        }).toArray();
+    public static Object[] listValueByOptional(TableMeta tableMeta, Map<String, Object> optional, Collection<String> fields) {
+        return fields.stream()
+                .map(field -> convert(optional.get(field), tableMeta.getFieldToColumnMetas().get(field).getField().getType()))
+                .toArray();
     }
 
     public static Object[] listUpdateValue(TableMeta tableMeta, Object value) {

@@ -1,12 +1,12 @@
 package com.swingfrog.summer2.dao.jdbc.meta;
 
+import com.google.common.collect.ImmutableSet;
 import com.swingfrog.summer2.dao.constant.ColumnType;
 import com.swingfrog.summer2.dao.constant.IndexType;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -71,10 +71,10 @@ public class JdbcTableMetaParser {
         return map.values().stream()
                 .map(v -> parseIndex(Objects.requireNonNull(v.stream().findAny().orElse(null)),
                         v.stream().map(index -> index.get(COLUMN_NAME).toString())
-                                .collect(Collectors.toSet()))).collect(Collectors.toList());
+                                .collect(ImmutableSet.toImmutableSet()))).collect(Collectors.toList());
     }
 
-    public static JdbcIndexMeta parseIndex(Map<String, Object> index, Set<String> columns) {
+    public static JdbcIndexMeta parseIndex(Map<String, Object> index, ImmutableSet<String> columns) {
         return JdbcIndexMeta.Builder.newBuilder()
                 .name(index.get(KEY_NAME).toString())
                 .columns(columns)

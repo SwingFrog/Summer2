@@ -19,7 +19,6 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -48,9 +47,9 @@ public class TableMetaParser {
         if (primaryKeyMeta.isAutoIncrement() && isNotIntOrLong(primaryKey.getType())) {
             throw new MetaRuntimeException("auto increment primary key field type must be int or long, entity -> " + entityClass.getName());
         }
-        List<ColumnMeta> columnMetas = fields.stream().map(TableMetaParser::parseColumn).collect(ImmutableList.toImmutableList());
-        Map<String, ColumnMeta> fieldToColumnMetas = columnMetas.stream().collect(ImmutableMap.toImmutableMap(ColumnMeta::getFieldName, v -> v));
-        Set<IndexMeta> indexMetas = Arrays.stream(table.index()).map(index -> parseIndex(fieldToColumnMetas, index)).collect(ImmutableSet.toImmutableSet());
+        ImmutableList<ColumnMeta> columnMetas = fields.stream().map(TableMetaParser::parseColumn).collect(ImmutableList.toImmutableList());
+        ImmutableMap<String, ColumnMeta> fieldToColumnMetas = columnMetas.stream().collect(ImmutableMap.toImmutableMap(ColumnMeta::getFieldName, v -> v));
+        ImmutableSet<IndexMeta> indexMetas = Arrays.stream(table.index()).map(index -> parseIndex(fieldToColumnMetas, index)).collect(ImmutableSet.toImmutableSet());
         indexMetas.stream().flatMap(indexMeta -> indexMeta.getFields().stream()).forEach(field -> {
             if (!fieldToColumnMetas.containsKey(field))
                 throw new MetaRuntimeException("not found index field -> " + field + ", entity -> " + entityClass.getName());

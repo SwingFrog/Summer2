@@ -1,7 +1,6 @@
 package com.swingfrog.summer2.dao.jdbc;
 
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import com.swingfrog.summer2.dao.Repository;
 import com.swingfrog.summer2.dao.jdbc.meta.JdbcColumnMeta;
 import com.swingfrog.summer2.dao.jdbc.meta.JdbcIndexMeta;
@@ -10,8 +9,6 @@ import com.swingfrog.summer2.dao.meta.ColumnMeta;
 import com.swingfrog.summer2.dao.meta.IndexMeta;
 import com.swingfrog.summer2.dao.meta.TableMeta;
 import com.swingfrog.summer2.dao.meta.TableMetaParser;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.sql.DataSource;
 import java.util.Arrays;
@@ -29,8 +26,6 @@ import java.util.stream.Collectors;
  */
 public abstract class AbstractJdbcRepository<K, V> extends AbstractJdbcPersistent<V> implements Repository<K, V> {
 
-    private static final Logger log = LoggerFactory.getLogger(AbstractJdbcRepository.class);
-
     private TableMeta tableMeta;
     private AtomicLong primaryKey;
 
@@ -40,7 +35,10 @@ public abstract class AbstractJdbcRepository<K, V> extends AbstractJdbcPersisten
     private String updateSql;
     private String selectSql;
     private String selectAllSql;
-    private Map<String, String> selectOptionalSqlMap;
+    private Map<IndexMeta, String> selectOptionalSqlMap;
+
+    @SuppressWarnings("rawtypes")
+    private static final Predicate TRUE_PREDICATE = any -> true;
 
     @Override
     void initialize(DataSource dataSource) {
@@ -65,7 +63,10 @@ public abstract class AbstractJdbcRepository<K, V> extends AbstractJdbcPersisten
         updateSql = JdbcSqlGenerator.update(tableMeta);
         selectSql = JdbcSqlGenerator.select(tableMeta);
         selectAllSql = JdbcSqlGenerator.selectAll(tableMeta);
-        selectOptionalSqlMap = Maps.newHashMap();
+        selectOptionalSqlMap = tableMeta.getIndexMetas()
+                .stream()
+                .collect(Collectors.toMap(indexMeta -> indexMeta,
+                        indexMeta -> JdbcSqlGenerator.selectOptional(tableMeta, indexMeta.getFields())));
     }
 
     private boolean existsTable() {
@@ -141,7 +142,9 @@ public abstract class AbstractJdbcRepository<K, V> extends AbstractJdbcPersisten
         if (primaryKey != null) {
             values.forEach(this::setPrimaryKey);
         }
-        addByPrimaryKey(values.stream().map(value -> (K) JdbcValueGenerator.getPrimaryKeyValue(tableMeta, value)).collect(Collectors.toList()), values);
+        addByPrimaryKey(values.stream()
+                .map(value -> (K) JdbcValueGenerator.getPrimaryKeyValue(tableMeta, value))
+                .collect(Collectors.toList()), values);
     }
 
     protected void addByPrimaryKey(K key, V value) {
@@ -168,7 +171,9 @@ public abstract class AbstractJdbcRepository<K, V> extends AbstractJdbcPersisten
     @SuppressWarnings("unchecked")
     @Override
     public void remove(Collection<V> values) {
-        removeByPrimaryKey(values.stream().map(value -> (K) JdbcValueGenerator.getPrimaryKeyValue(tableMeta, value)).collect(Collectors.toList()));
+        removeByPrimaryKey(values.stream()
+                .map(value -> (K) JdbcValueGenerator.getPrimaryKeyValue(tableMeta, value))
+                .collect(Collectors.toList()));
     }
 
     protected void removeByPrimaryKey(K key) {
@@ -226,13 +231,16 @@ public abstract class AbstractJdbcRepository<K, V> extends AbstractJdbcPersisten
 
     @Override
     public List<V> list(Map<String, Object> indexOptional, Predicate<V> filter) {
-        List<String> fields = JdbcValueGenerator.listValidFieldByOptional(tableMeta, indexOptional);
-        if (notMatchIndexField(fields)) {
-            log.warn("miss index fields -> {} entity -> {}", fields, getEntityClass().getName());
+        if (indexOptional.isEmpty())
+            return Lists.newArrayListWithCapacity(0);
+        IndexMeta indexMeta = findIndexMeta(indexOptional);
+        if (indexMeta == null) {
+            throw new JdbcRuntimeException(String.format("miss index, fields -> %s entity -> %s",
+                    indexOptional.values(), getEntityClass().getName()));
         }
-        return list(selectOptionalSql(fields), JdbcValueGenerator.listValidValueByOptional(tableMeta, indexOptional, fields))
+        return list(selectOptionalSqlMap.get(indexMeta), JdbcValueGenerator.listValueByOptional(tableMeta, indexOptional, indexMeta.getFields()))
                 .stream()
-                .filter(filter)
+                .filter(getSafeFilter(filter))
                 .collect(Collectors.toList());
     }
 
@@ -241,13 +249,14 @@ public abstract class AbstractJdbcRepository<K, V> extends AbstractJdbcPersisten
         return list(selectAllSql);
     }
 
-    private String selectOptionalSql(List<String> fields) {
-        return selectOptionalSqlMap.computeIfAbsent(String.join("-", fields).intern(),
-                k -> JdbcSqlGenerator.selectOptional(tableMeta, fields));
-    }
-
-    protected boolean notMatchIndexField(List<String> indexField) {
-        return tableMeta.getIndexMetas().stream().anyMatch(indexMeta -> indexMeta.getFields().containsAll(indexField));
+    protected IndexMeta findIndexMeta(Map<String, Object> indexOptional) {
+        Collection<Object> values = indexOptional.values();
+        return tableMeta.getIndexMetas()
+                .stream()
+                .filter(indexMeta -> indexMeta.getFields().size() == values.size())
+                .filter(indexMeta -> indexMeta.getFields().containsAll(values))
+                .findAny()
+                .orElse(null);
     }
 
     protected TableMeta getTableMeta() {
@@ -259,7 +268,14 @@ public abstract class AbstractJdbcRepository<K, V> extends AbstractJdbcPersisten
     }
 
     protected String getCreateLock(Object key) {
-        return getLock(this.getClass().getSimpleName(), tableMeta.getName(), "getOrCreate", key);
+        return getLock(this.getClass().getSimpleName(), tableMeta.getName(), "create", key);
+    }
+
+    @SuppressWarnings("unchecked")
+    protected Predicate<V> getSafeFilter(Predicate<V> filter) {
+        if (filter == null)
+            return TRUE_PREDICATE;
+        return filter;
     }
 
 }
