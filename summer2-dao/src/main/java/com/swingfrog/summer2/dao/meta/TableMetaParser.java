@@ -106,6 +106,7 @@ public class TableMetaParser {
                 .columns(Arrays.stream(index.fields()).map(filed -> fieldToColumnMetas.get(filed).getName()).collect(ImmutableSet.toImmutableSet()))
                 .type(index.type())
                 .fields(ImmutableSet.copyOf(index.fields()))
+                .allReadOnly(Arrays.stream(index.fields()).map(fieldToColumnMetas::get).allMatch(ColumnMeta::isReadOnly))
                 .build();
     }
 

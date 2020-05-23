@@ -12,12 +12,15 @@ public class IndexMeta {
     private final ImmutableSet<String> columns;
     private final IndexType type;
     private final ImmutableSet<String> fields;
+    private final boolean allReadOnly;
 
-    public IndexMeta(String name, ImmutableSet<String> columns, IndexType type, ImmutableSet<String> fields) {
+    public IndexMeta(String name, ImmutableSet<String> columns, IndexType type, ImmutableSet<String> fields,
+                     boolean allReadOnly) {
         this.name = name;
         this.columns = columns;
         this.type = type;
         this.fields = fields;
+        this.allReadOnly = allReadOnly;
     }
 
     public String getName() {
@@ -36,11 +39,16 @@ public class IndexMeta {
         return fields;
     }
 
+    public boolean isAllReadOnly() {
+        return allReadOnly;
+    }
+
     public static final class Builder {
         private String name;
         private ImmutableSet<String> columns;
         private IndexType type;
         private ImmutableSet<String> fields;
+        private boolean allReadOnly;
 
         private Builder() {}
 
@@ -66,6 +74,12 @@ public class IndexMeta {
             return this;
         }
 
-        public IndexMeta build() { return new IndexMeta(name, columns, type, fields); }
+        public Builder allReadOnly(boolean allReadOnly) {
+            this.allReadOnly = allReadOnly;
+            return this;
+        }
+
+        public IndexMeta build() { return new IndexMeta(name, columns, type, fields, allReadOnly); }
     }
+
 }

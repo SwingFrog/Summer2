@@ -69,7 +69,7 @@ public class JdbcSqlGenerator {
 
     public static String createIndex(IndexMeta indexMeta) {
         return String.format("%s INDEX `%s` (`%s`)",
-                indexMeta.getType().name(),
+                indexMeta.getType().getValue(),
                 indexMeta.getName(),
                 String.join("`,`", indexMeta.getColumns()));
     }

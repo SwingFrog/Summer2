@@ -114,8 +114,13 @@ public abstract class AbstractJdbcAsyncCacheRepository<K, V> extends AbstractJdb
         waitChange.add(Change.ofRemoveAll());
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public void update(V value) {
+        K primaryKey = (K) JdbcValueGenerator.getPrimaryKeyValue(getTableMeta(), value);
+        if (get(primaryKey) == null)
+            throw new JdbcRuntimeException(String.format("can't update primary key -> %s, entity -> %s", primaryKey, getEntityClass().getName()));
+        updateCache(primaryKey, value);
         waitUpdate.computeIfAbsent(value, k -> System.currentTimeMillis());
     }
 

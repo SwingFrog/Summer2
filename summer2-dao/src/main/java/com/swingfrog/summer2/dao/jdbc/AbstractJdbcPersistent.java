@@ -35,25 +35,12 @@ public abstract class AbstractJdbcPersistent<T> {
     private BeanHandler<T> beanHandler;
     private BeanListHandler<T> beanListHandler;
 
-    @SuppressWarnings("unchecked")
     void initialize(DataSource dataSource) {
         Objects.requireNonNull(dataSource);
         this.dataSource = dataSource;
-        Type superClass = getClass().getGenericSuperclass();
-        if (superClass instanceof ParameterizedType) {
-            ParameterizedType parameterizedType = (ParameterizedType) superClass;
-            Type[] typeArgs = parameterizedType.getActualTypeArguments();
-            if (typeArgs != null && typeArgs.length > 0) {
-                if (typeArgs[0] instanceof Class) {
-                    entityClass = (Class<T>) typeArgs[0];
-                }
-            }
-        }
-        if (entityClass == null)
-            throw new JdbcRuntimeException("persistent initialize failure, entity -> " + this.getClass().getName());
         Map<String, String> columnToPropertyOverrides = columnToPropertyOverrides();
-        beanHandler = new BeanHandler<>(entityClass, new BasicRowProcessor(new PersistentBeanProcessor(columnToPropertyOverrides)));
-        beanListHandler = new BeanListHandler<>(entityClass, new BasicRowProcessor(new PersistentBeanProcessor(columnToPropertyOverrides)));
+        beanHandler = new BeanHandler<>(getEntityClass(), new BasicRowProcessor(new PersistentBeanProcessor(columnToPropertyOverrides)));
+        beanListHandler = new BeanListHandler<>(getEntityClass(), new BasicRowProcessor(new PersistentBeanProcessor(columnToPropertyOverrides)));
     }
 
     protected Map<String, String> columnToPropertyOverrides() {
@@ -64,7 +51,22 @@ public abstract class AbstractJdbcPersistent<T> {
         return DataSourceTopic.DEFAULT;
     }
 
+    @SuppressWarnings("unchecked")
     protected Class<T> getEntityClass() {
+        if (entityClass == null) {
+            Type superClass = getClass().getGenericSuperclass();
+            if (superClass instanceof ParameterizedType) {
+                ParameterizedType parameterizedType = (ParameterizedType) superClass;
+                Type[] typeArgs = parameterizedType.getActualTypeArguments();
+                if (typeArgs != null && typeArgs.length > 0) {
+                    if (typeArgs[0] instanceof Class) {
+                        entityClass = (Class<T>) typeArgs[0];
+                    }
+                }
+            }
+            if (entityClass == null)
+                throw new JdbcRuntimeException("persistent initialize failure, entity -> " + this.getClass().getName());
+        }
         return entityClass;
     }
 

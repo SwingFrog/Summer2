@@ -23,6 +23,7 @@ public class JdbcAsyncRepositoryProcessor {
     public JdbcAsyncRepositoryProcessor(int corePoolSize) {
         executor = Executors.newScheduledThreadPool(corePoolSize,
                 new ThreadFactoryBuilder().setNameFormat("JdbcAsyncRepositoryProcessor-%s").build());
+        log.info("jdbc async repository core pool size -> {}", corePoolSize);
     }
 
     public void addJdbcAsyncCacheRepository(AbstractJdbcAsyncCacheRepository<?, ?> repository) {
@@ -31,9 +32,11 @@ public class JdbcAsyncRepositoryProcessor {
         AsyncTask asyncTask = repository.initializeAsync();
         executor.scheduleWithFixedDelay(asyncTask.getRunnable(), asyncTask.getDelayTime(), asyncTask.getDelayTime(),
                 TimeUnit.MILLISECONDS);
+        log.debug("add jdbc async repository -> {}", repository.getClass().getName());
     }
 
     public void shutdown() {
+        log.debug("jdbc async repository shutdown...");
         executor.shutdown();
         try {
             while (!executor.isTerminated()) {

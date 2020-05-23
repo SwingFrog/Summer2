@@ -91,14 +91,14 @@ public abstract class AbstractJdbcCacheRepository<K, V> extends AbstractJdbcRepo
     @Override
     public void update(V value) {
         super.update(value);
-        addCache((K) JdbcValueGenerator.getPrimaryKeyValue(getTableMeta(), value), value);
+        updateCache((K) JdbcValueGenerator.getPrimaryKeyValue(getTableMeta(), value), value);
     }
 
     @SuppressWarnings("unchecked")
     @Override
     public void update(Collection<V> values) {
         super.update(values);
-        values.forEach(value -> addCache((K) JdbcValueGenerator.getPrimaryKeyValue(getTableMeta(), value), value));
+        values.forEach(value -> updateCache((K) JdbcValueGenerator.getPrimaryKeyValue(getTableMeta(), value), value));
     }
 
     @Override
@@ -131,7 +131,8 @@ public abstract class AbstractJdbcCacheRepository<K, V> extends AbstractJdbcRepo
         return listPrimaryKey(indexMeta, indexOptional).stream()
                 .map(this::get)
                 .filter(Objects::nonNull)
-                .filter(filter)
+                .filter(getSafeFilter(filter))
+                .filter(getNotReadOnlyFilter(indexMeta, indexOptional))
                 .collect(Collectors.toList());
     }
 
@@ -157,23 +158,25 @@ public abstract class AbstractJdbcCacheRepository<K, V> extends AbstractJdbcRepo
     protected void addCache(K key, V value) {
         synchronized (getCacheLock(key)) {
             V old = cache.getIfPresent(key);
+            if (old == null || old == EMPTY)
+                cache.put(key, value);
+            if (old == value || value == EMPTY)
+                return;
+            getTableMeta().getIndexMetas().forEach(indexMeta -> addPrimaryKeyCache(indexMeta, key, value));
+        }
+    }
+
+    protected void updateCache(K key, V value) {
+        synchronized (getCacheLock(key)) {
+            V old = cache.getIfPresent(key);
             if (old == null || old == EMPTY) {
                 cache.put(key, value);
             }
-            if (old == value || value == EMPTY)
+            if (value == EMPTY)
                 return;
-            getTableMeta().getIndexMetas().forEach(indexMeta -> {
-                String indexFieldValue = getIndexFieldValue(indexMeta, value);
-                synchronized (getIndexFieldLock(indexFieldValue)) {
-                    Cache<String, Set<K>> primaryKeyCache = primaryKeyCacheMap.get(indexMeta);
-                    Set<K> primaryKeySet = primaryKeyCache.getIfPresent(indexFieldValue);
-                    if (primaryKeySet == null) {
-                        primaryKeySet = Sets.newConcurrentHashSet();
-                        primaryKeyCache.put(indexFieldValue, primaryKeySet);
-                    }
-                    primaryKeySet.add(key);
-                }
-            });
+            getTableMeta().getIndexMetas().stream()
+                    .filter(indexMeta -> !indexMeta.isAllReadOnly())
+                    .forEach(indexMeta -> addPrimaryKeyCache(indexMeta, key, value));
         }
     }
 
@@ -183,13 +186,7 @@ public abstract class AbstractJdbcCacheRepository<K, V> extends AbstractJdbcRepo
             cache.put(key, EMPTY);
             if (old == null || old == EMPTY)
                 return;
-            getTableMeta().getIndexMetas().forEach(indexMeta -> {
-                String indexFieldValue = getIndexFieldValue(indexMeta, old);
-                synchronized (getIndexFieldLock(indexFieldValue)) {
-                    primaryKeyCacheMap.get(indexMeta).invalidate(indexFieldValue);
-                    primaryKeyCacheFinishMap.get(indexMeta).invalidate(indexFieldValue);
-                }
-            });
+            getTableMeta().getIndexMetas().forEach(indexMeta -> removePrimaryKeyCache(indexMeta, old));
         }
     }
 
@@ -199,16 +196,25 @@ public abstract class AbstractJdbcCacheRepository<K, V> extends AbstractJdbcRepo
         primaryKeyCacheFinishMap.values().forEach(Cache::invalidateAll);
     }
 
-    protected String getCacheLock(Object key) {
-        return getLock(this.getClass().getSimpleName(), getTableMeta().getName(), "cache", key);
+    private void addPrimaryKeyCache(IndexMeta indexMeta, K key, V value) {
+        String indexFieldValue = getIndexFieldValue(indexMeta, value);
+        synchronized (getIndexFieldLock(indexFieldValue)) {
+            Cache<String, Set<K>> primaryKeyCache = primaryKeyCacheMap.get(indexMeta);
+            Set<K> primaryKeySet = primaryKeyCache.getIfPresent(indexFieldValue);
+            if (primaryKeySet == null) {
+                primaryKeySet = Sets.newConcurrentHashSet();
+                primaryKeyCache.put(indexFieldValue, primaryKeySet);
+            }
+            primaryKeySet.add(key);
+        }
     }
 
-    protected String getIndexFieldLock(String indexFieldValue) {
-        return getLock(this.getClass().getSimpleName(), getTableMeta().getName(), "indexField", indexFieldValue);
-    }
-
-    protected String getListAllLock() {
-        return getLock(this.getClass().getSimpleName(), getTableMeta().getName(), "listAll");
+    private void removePrimaryKeyCache(IndexMeta indexMeta, V value) {
+        String indexFieldValue = getIndexFieldValue(indexMeta, value);
+        synchronized (getIndexFieldLock(indexFieldValue)) {
+            primaryKeyCacheMap.get(indexMeta).invalidate(indexFieldValue);
+            primaryKeyCacheFinishMap.get(indexMeta).invalidate(indexFieldValue);
+        }
     }
 
     @SuppressWarnings("unchecked")
@@ -249,6 +255,26 @@ public abstract class AbstractJdbcCacheRepository<K, V> extends AbstractJdbcRepo
                 .map(columnMeta -> JdbcValueGenerator.getColumnValue(columnMeta, value))
                 .map(Object::toString)
                 .collect(Collectors.joining("-"));
+    }
+
+    private Predicate<V> getNotReadOnlyFilter(IndexMeta indexMeta, Map<String, Object> indexOptional) {
+        if (indexMeta.isAllReadOnly())
+            return getSafeFilter(null);
+        return value -> indexMeta.getFields().stream()
+                .map(field -> getTableMeta().getFieldToColumnMetas().get(field))
+                .allMatch(columnMeta -> JdbcValueGenerator.getColumnValue(columnMeta, value).equals(indexOptional.get(columnMeta.getFieldName())));
+    }
+
+    protected String getCacheLock(Object key) {
+        return getLock(this.getClass().getSimpleName(), getTableMeta().getName(), "cache", key);
+    }
+
+    protected String getIndexFieldLock(String indexFieldValue) {
+        return getLock(this.getClass().getSimpleName(), getTableMeta().getName(), "indexField", indexFieldValue);
+    }
+
+    protected String getListAllLock() {
+        return getLock(this.getClass().getSimpleName(), getTableMeta().getName(), "listAll");
     }
 
 }

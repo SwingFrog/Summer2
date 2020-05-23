@@ -11,6 +11,8 @@ import com.swingfrog.summer2.dao.meta.TableMeta;
 import com.swingfrog.summer2.dao.meta.TableMetaParser;
 
 import javax.sql.DataSource;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
@@ -25,6 +27,8 @@ import java.util.stream.Collectors;
  * @author: toke
  */
 public abstract class AbstractJdbcRepository<K, V> extends AbstractJdbcPersistent<V> implements Repository<K, V> {
+
+    private Class<V> entityClass;
 
     private TableMeta tableMeta;
     private AtomicLong primaryKey;
@@ -42,8 +46,8 @@ public abstract class AbstractJdbcRepository<K, V> extends AbstractJdbcPersisten
 
     @Override
     void initialize(DataSource dataSource) {
-        super.initialize(dataSource);
         tableMeta = TableMetaParser.parse(getEntityClass());
+        super.initialize(dataSource);
         if (existsTable()) {
             updateTable();
         } else {
@@ -69,6 +73,25 @@ public abstract class AbstractJdbcRepository<K, V> extends AbstractJdbcPersisten
                         indexMeta -> JdbcSqlGenerator.selectOptional(tableMeta, indexMeta.getFields())));
     }
 
+    @SuppressWarnings("unchecked")
+    protected Class<V> getEntityClass() {
+        if (entityClass == null) {
+            Type superClass = getClass().getGenericSuperclass();
+            if (superClass instanceof ParameterizedType) {
+                ParameterizedType parameterizedType = (ParameterizedType) superClass;
+                Type[] typeArgs = parameterizedType.getActualTypeArguments();
+                if (typeArgs != null && typeArgs.length > 1) {
+                    if (typeArgs[1] instanceof Class) {
+                        entityClass = (Class<V>) typeArgs[1];
+                    }
+                }
+            }
+            if (entityClass == null)
+                throw new JdbcRuntimeException("persistent initialize failure, entity -> " + this.getClass().getName());
+        }
+        return entityClass;
+    }
+
     private boolean existsTable() {
         return getValue(JdbcSqlGenerator.existsTable(tableMeta)) != null;
     }
@@ -78,8 +101,15 @@ public abstract class AbstractJdbcRepository<K, V> extends AbstractJdbcPersisten
     }
 
     private void updateTable() {
-        // update column
         List<Map<String, Object>> columns = listMap(JdbcSqlGenerator.listColumn(tableMeta));
+        List<Map<String, Object>> indexes = listMap(JdbcSqlGenerator.listIndex(tableMeta));
+
+        // remove primary key
+        boolean primaryKeyChange = !JdbcTableMetaParser.findPrimaryKeyColumn(indexes).equals(tableMeta.getPrimaryKeyMeta().getName());
+        if (primaryKeyChange)
+            update(JdbcSqlGenerator.removePrimaryKey(tableMeta));
+
+        // update column
         List<JdbcColumnMeta> jdbcColumnMetas = JdbcTableMetaParser.parseColumn(columns);
         List<ColumnMeta> columnMetas = Lists.newLinkedList(tableMeta.getColumnMetas());
         columnMetas.add(tableMeta.getPrimaryKeyMeta());
@@ -94,7 +124,6 @@ public abstract class AbstractJdbcRepository<K, V> extends AbstractJdbcPersisten
         changeColumns.forEach(columnMeta -> update(JdbcSqlGenerator.changeColumn(tableMeta, columnMeta)));
 
         // update index
-        List<Map<String, Object>> indexes = listMap(JdbcSqlGenerator.listIndex(tableMeta));
         List<JdbcIndexMeta> jdbcIndexMetas = JdbcTableMetaParser.parseIndex(indexes);
         List<IndexMeta> addIndexes = tableMeta.getIndexMetas().stream()
                 .filter(indexMeta -> !jdbcIndexMetas.removeIf(jdbcIndexMeta -> jdbcIndexMeta.isSame(indexMeta)))
@@ -102,10 +131,8 @@ public abstract class AbstractJdbcRepository<K, V> extends AbstractJdbcPersisten
         jdbcIndexMetas.forEach(jdbcIndexMeta -> update(JdbcSqlGenerator.removeIndex(tableMeta, jdbcIndexMeta.getName())));
         addIndexes.forEach(indexMeta -> update(JdbcSqlGenerator.addIndex(tableMeta, indexMeta)));
 
-        // update primary key
-        String primaryKeyColumn = JdbcTableMetaParser.findPrimaryKeyColumn(indexes);
-        if (!primaryKeyColumn.equals(tableMeta.getPrimaryKeyMeta().getName())) {
-            update(JdbcSqlGenerator.removePrimaryKey(tableMeta));
+        // add primary key
+        if (primaryKeyChange) {
             update(JdbcSqlGenerator.addPrimaryKey(tableMeta, tableMeta.getPrimaryKeyMeta()));
         }
     }
