@@ -126,7 +126,7 @@ public abstract class AbstractJdbcCacheRepository<K, V> extends AbstractJdbcRepo
         IndexMeta indexMeta = findIndexMeta(indexOptional);
         if (indexMeta == null) {
             throw new JdbcRuntimeException(String.format("miss index, fields -> %s entity -> %s",
-                    indexOptional.values(), getEntityClass().getName()));
+                    indexOptional.keySet(), getEntityClass().getName()));
         }
         return listPrimaryKey(indexMeta, indexOptional).stream()
                 .map(this::get)
@@ -230,7 +230,7 @@ public abstract class AbstractJdbcCacheRepository<K, V> extends AbstractJdbcRepo
                     primaryKeySet = Sets.newConcurrentHashSet();
                     primaryKeyCache.put(indexFieldValue, primaryKeySet);
                 }
-                for (V value : list(indexOptional, null)) {
+                for (V value : super.list(indexOptional, null)) {
                     K key = (K) JdbcValueGenerator.getPrimaryKeyValue(getTableMeta(), value);
                     addCache(key, value);
                     primaryKeySet.add(key);

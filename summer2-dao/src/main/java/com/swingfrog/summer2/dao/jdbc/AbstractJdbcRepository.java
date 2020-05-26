@@ -18,6 +18,7 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -263,7 +264,7 @@ public abstract class AbstractJdbcRepository<K, V> extends AbstractJdbcPersisten
         IndexMeta indexMeta = findIndexMeta(indexOptional);
         if (indexMeta == null) {
             throw new JdbcRuntimeException(String.format("miss index, fields -> %s entity -> %s",
-                    indexOptional.values(), getEntityClass().getName()));
+                    indexOptional.keySet(), getEntityClass().getName()));
         }
         return list(selectOptionalSqlMap.get(indexMeta), JdbcValueGenerator.listValueByOptional(tableMeta, indexOptional, indexMeta.getFields()))
                 .stream()
@@ -277,7 +278,7 @@ public abstract class AbstractJdbcRepository<K, V> extends AbstractJdbcPersisten
     }
 
     protected IndexMeta findIndexMeta(Map<String, Object> indexOptional) {
-        Collection<Object> values = indexOptional.values();
+        Set<String> values = indexOptional.keySet();
         return tableMeta.getIndexMetas()
                 .stream()
                 .filter(indexMeta -> indexMeta.getFields().size() == values.size())

@@ -31,28 +31,36 @@ public class JdbcValueGenerator {
     static {
         ThreeConsumer<Field, Object, Long> fieldLong = (field, value, primaryValue) -> {
             try {
+                field.setAccessible(true);
                 field.setLong(value, primaryValue);
+                field.setAccessible(false);
             } catch (IllegalAccessException e) {
                 throw new JdbcRuntimeException(e);
             }
         };
         ThreeConsumer<Field, Object, Long> fieldInt = (field, value, primaryValue) -> {
             try {
+                field.setAccessible(true);
                 field.setInt(value, primaryValue.intValue());
+                field.setAccessible(false);
             } catch (IllegalAccessException e) {
                 throw new JdbcRuntimeException(e);
             }
         };
         ThreeConsumer<Field, Object, Long> fieldShort = (field, value, primaryValue) -> {
             try {
+                field.setAccessible(true);
                 field.setShort(value, primaryValue.shortValue());
+                field.setAccessible(false);
             } catch (IllegalAccessException e) {
                 throw new JdbcRuntimeException(e);
             }
         };
         ThreeConsumer<Field, Object, Long> fieldByte = (field, value, primaryValue) -> {
             try {
+                field.setAccessible(true);
                 field.setByte(value, primaryValue.byteValue());
+                field.setAccessible(false);
             } catch (IllegalAccessException e) {
                 throw new JdbcRuntimeException(e);
             }
@@ -78,7 +86,9 @@ public class JdbcValueGenerator {
     public static Object getFieldValue(Field field, Object value) {
         Object res;
         try {
+            field.setAccessible(true);
             res = field.get(value);
+            field.setAccessible(false);
             res = convert(res, field.getType());
         } catch (IllegalAccessException e) {
             throw new JdbcRuntimeException(e);
@@ -88,7 +98,9 @@ public class JdbcValueGenerator {
 
     public static void jsonConvertJavaBean(Field field, Object value) {
         try {
+            field.setAccessible(true);
             field.set(value, JSON.parseObject(JSON.toJSONString(field.get(value)), field.getType()));
+            field.setAccessible(false);
         } catch (IllegalAccessException e) {
             throw new JdbcRuntimeException(e);
         }
