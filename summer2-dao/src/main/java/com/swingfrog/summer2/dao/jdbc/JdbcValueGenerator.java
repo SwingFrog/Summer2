@@ -174,7 +174,7 @@ public class JdbcValueGenerator {
             String.class, Date.class);
 
     public static boolean isEntity(Type type) {
-        return notEntityList.contains(type);
+        return !notEntityList.contains(type);
     }
 
 }

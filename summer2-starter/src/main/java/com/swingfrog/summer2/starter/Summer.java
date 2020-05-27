@@ -9,7 +9,7 @@ import com.swingfrog.summer2.core.ioc.IocProcessor;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Set;
+import java.util.ListIterator;
 import java.util.stream.Collectors;
 
 /**
@@ -37,10 +37,14 @@ public class Summer {
                 .collect(Collectors.toList());
         summerListeners.forEach(summerListener -> summerListener.onPrepare(summerContext));
         summerListeners.forEach(summerListener -> summerListener.onStart(summerContext));
-        Runtime.getRuntime().addShutdownHook(new Thread(()->
-                summerListeners.stream()
-                        .sorted(Comparator.comparingInt(SummerListener::priority))
-                        .forEach(summerListener -> summerListener.onStop(summerContext)), "shutdown"));
+        Runtime.getRuntime().addShutdownHook(new Thread(()-> {
+            for (ListIterator<SummerListener> iterator = summerListeners.listIterator(); iterator.hasPrevious();) {
+                iterator.previous().onStop(summerContext);
+            }
+            for (ListIterator<SummerListener> iterator = summerListeners.listIterator(); iterator.hasPrevious();) {
+                iterator.previous().onDestroy(summerContext);
+            }
+        }, "shutdown"));
     }
 
 }

@@ -22,7 +22,7 @@ public class JdbcAsyncRepositoryProcessor {
 
     public JdbcAsyncRepositoryProcessor(int corePoolSize) {
         executor = Executors.newScheduledThreadPool(corePoolSize,
-                new ThreadFactoryBuilder().setNameFormat("JdbcAsyncRepositoryProcessor-%s").build());
+                new ThreadFactoryBuilder().setNameFormat("JdbcAsyncRepositoryProcessor-%s").setDaemon(true).build());
         log.info("jdbc async repository core pool size -> {}", corePoolSize);
     }
 

@@ -212,7 +212,7 @@ public abstract class AbstractJdbcRepository<K, V> extends AbstractJdbcPersisten
         Object[][] paramsList = new Object[keys.size()][];
         int i = 0;
         for (K key : keys) {
-            paramsList[i++] = new Object[]{JdbcValueGenerator.getPrimaryKeyValue(tableMeta, key)};
+            paramsList[i++] = new Object[]{key};
         }
         batchUpdate(deleteSql, paramsList);
     }

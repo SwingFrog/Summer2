@@ -262,7 +262,8 @@ public abstract class AbstractJdbcCacheRepository<K, V> extends AbstractJdbcRepo
             return getSafeFilter(null);
         return value -> indexMeta.getFields().stream()
                 .map(field -> getTableMeta().getFieldToColumnMetas().get(field))
-                .allMatch(columnMeta -> JdbcValueGenerator.getColumnValue(columnMeta, value).equals(indexOptional.get(columnMeta.getFieldName())));
+                .allMatch(columnMeta -> JdbcValueGenerator.getColumnValue(columnMeta, value).hashCode() ==
+                        indexOptional.get(columnMeta.getFieldName()).hashCode());
     }
 
     protected String getCacheLock(Object key) {
