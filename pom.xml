@@ -20,6 +20,7 @@
         <module>summer2-dao</module>
         <module>summer2-dao-starter</module>
         <module>summer2-net</module>
+        <module>demo</module>
     </modules>
 
     <build>

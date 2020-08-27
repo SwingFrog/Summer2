@@ -22,6 +22,10 @@ public class Summer {
     }
 
     public static void hot(Class<?> bootstrapClass, String defaultPropertyPath) {
+        hot(bootstrapClass, defaultPropertyPath, 64);
+    }
+
+    public static void hot(Class<?> bootstrapClass, String defaultPropertyPath, int tryAutowireCount) {
         SummerApplication summerApplication = bootstrapClass.getAnnotation(SummerApplication.class);
         if (summerApplication == null)
             throw new StarterRuntimeException("bootstrap class need use @SummerApplication");
@@ -29,7 +33,7 @@ public class Summer {
         Arrays.stream(summerApplication.value()).forEach(iocProcessor::scanComponent);
         new StarterProcessor(iocProcessor).foundStarter();
         iocProcessor.registerClass(bootstrapClass);
-        iocProcessor.autowire();
+        iocProcessor.autowire(tryAutowireCount);
         new ConfigurationProcessor(iocProcessor).loadProperties(defaultPropertyPath);
         SummerContext summerContext = new SummerContext(iocProcessor);
         List<SummerListener> summerListeners = iocProcessor.listBean(SummerListener.class).stream()

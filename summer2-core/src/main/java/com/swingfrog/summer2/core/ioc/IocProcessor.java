@@ -105,9 +105,9 @@ public class IocProcessor implements Container {
                 .orElse(null);
     }
 
-    public void autowire() {
+    public void autowire(int tryAutowireCount) {
         instanceNoArgConstructor();
-        tryAutowire();
+        tryAutowire(tryAutowireCount);
         registers = null;
         waitAutowire = null;
     }
@@ -130,8 +130,8 @@ public class IocProcessor implements Container {
         });
     }
     
-    private void tryAutowire() {
-        for (int i = 0; i < 16; i++) {
+    private void tryAutowire(int tryAutowireCount) {
+        for (int i = 0; i < tryAutowireCount; i++) {
             tryAutowireArgsConstructor();
             tryCallInstanceCreateBean();
             tryAutowireField();
