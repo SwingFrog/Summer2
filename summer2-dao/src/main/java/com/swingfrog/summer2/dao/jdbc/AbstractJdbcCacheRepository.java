@@ -30,8 +30,8 @@ public abstract class AbstractJdbcCacheRepository<K, V> extends AbstractJdbcRepo
     private final Map<IndexMeta, Cache<String, Set<K>>> primaryKeyCacheMap = Maps.newConcurrentMap();
     private final Map<IndexMeta, Cache<String, Boolean>> primaryKeyCacheFinishMap = Maps.newConcurrentMap();
     private final AtomicLong listAllTimestamp = new AtomicLong(0);
-    private final long expireTime = expireTime();
 
+    // never expire if value less then zero
     protected abstract long expireTime();
 
     @Override
@@ -42,15 +42,24 @@ public abstract class AbstractJdbcCacheRepository<K, V> extends AbstractJdbcRepo
         } catch (InstantiationException | IllegalAccessException e) {
             throw new JdbcRuntimeException("cache repository EMPTY not null");
         }
-        getTableMeta().getIndexMetas()
-                .forEach(indexMeta -> {
-                    primaryKeyCacheMap.put(indexMeta, CacheBuilder.newBuilder()
-                            .expireAfterAccess(expireTime, TimeUnit.MILLISECONDS)
-                            .build());
-                    primaryKeyCacheFinishMap.put(indexMeta, CacheBuilder.newBuilder()
-                            .expireAfterAccess(expireTime, TimeUnit.MILLISECONDS)
-                            .build());
-                });
+        long expireTime = expireTime();
+        if (expireTime >= 0) {
+            getTableMeta().getIndexMetas()
+                    .forEach(indexMeta -> {
+                        primaryKeyCacheMap.put(indexMeta, CacheBuilder.newBuilder()
+                                .expireAfterAccess(expireTime, TimeUnit.MILLISECONDS)
+                                .build());
+                        primaryKeyCacheFinishMap.put(indexMeta, CacheBuilder.newBuilder()
+                                .expireAfterAccess(expireTime, TimeUnit.MILLISECONDS)
+                                .build());
+                    });
+        } else {
+            getTableMeta().getIndexMetas()
+                    .forEach(indexMeta -> {
+                        primaryKeyCacheMap.put(indexMeta, CacheBuilder.newBuilder().build());
+                        primaryKeyCacheFinishMap.put(indexMeta, CacheBuilder.newBuilder().build());
+                    });
+        }
     }
 
     @SuppressWarnings("unchecked")

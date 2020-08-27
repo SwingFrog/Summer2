@@ -25,6 +25,9 @@ public class SummerDaoStarter implements SummerListener {
 
     @Override
     public int priority() {
+        Integer priority = summerDaoConfiguration.getDaoStarterPriority();
+        if (priority != null)
+            return priority;
         return SummerListener.PRIORITY_SYSTEM;
     }
 
@@ -33,8 +36,7 @@ public class SummerDaoStarter implements SummerListener {
         JdbcProcessor jdbcProcessor = new JdbcProcessor();
         summerDataSourceTopic.forEach(jdbcProcessor::addDataSource);
         context.listBean(AbstractJdbcPersistent.class).forEach(jdbcProcessor::injectDataSource);
-        int corePoolSize = summerDaoConfiguration.getDaoAsyncCorePoolSize();
-        jdbcAsyncRepositoryProcessor = new JdbcAsyncRepositoryProcessor(Math.max(corePoolSize, 1));
+        jdbcAsyncRepositoryProcessor = new JdbcAsyncRepositoryProcessor(summerDaoConfiguration.getDaoAsyncCorePoolSize());
         context.listBean(AbstractJdbcAsyncCacheRepository.class).forEach(jdbcAsyncRepositoryProcessor::addJdbcAsyncCacheRepository);
     }
 

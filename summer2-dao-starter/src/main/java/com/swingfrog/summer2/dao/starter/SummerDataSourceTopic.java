@@ -26,7 +26,7 @@ public class SummerDataSourceTopic {
     public static Builder newBuilder() { return new Builder(); }
 
     public static final class Builder {
-        private Map<String, DataSource> dataSourceMap = Maps.newHashMap();
+        private final Map<String, DataSource> dataSourceMap = Maps.newHashMap();
 
         private Builder() {}
 

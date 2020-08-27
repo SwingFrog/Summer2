@@ -21,6 +21,8 @@ public class JdbcAsyncRepositoryProcessor {
     private final Set<AbstractJdbcAsyncCacheRepository<?, ?>> repositories = Sets.newConcurrentHashSet();
 
     public JdbcAsyncRepositoryProcessor(int corePoolSize) {
+        if (corePoolSize <= 0)
+            corePoolSize = Runtime.getRuntime().availableProcessors() * 2;
         executor = Executors.newScheduledThreadPool(corePoolSize,
                 new ThreadFactoryBuilder().setNameFormat("JdbcAsyncRepositoryProcessor-%s").setDaemon(true).build());
         log.info("jdbc async repository core pool size -> {}", corePoolSize);

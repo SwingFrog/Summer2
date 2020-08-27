@@ -14,9 +14,9 @@ import java.util.Set;
 public class WaitAutowire {
 
     private Object target;
-    private Set<Field> waitAutowireFields = new HashSet<>();
-    private Set<Method> waitAutowireMethod = new HashSet<>();
-    private Set<Method> waitCreateBeanMethod = new HashSet<>();
+    private final Set<Field> waitAutowireFields = new HashSet<>();
+    private final Set<Method> waitAutowireMethod = new HashSet<>();
+    private final Set<Method> waitCreateBeanMethod = new HashSet<>();
 
     public static WaitAutowire valueOf(Object target) {
         WaitAutowire waitAutowire = new WaitAutowire();

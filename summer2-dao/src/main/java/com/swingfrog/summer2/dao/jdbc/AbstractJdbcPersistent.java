@@ -31,7 +31,7 @@ public abstract class AbstractJdbcPersistent<T> {
 
     private Class<T> entityClass;
     private DataSource dataSource;
-    private QueryRunner queryRunner = new QueryRunner();
+    private final QueryRunner queryRunner = new QueryRunner();
     private BeanHandler<T> beanHandler;
     private BeanListHandler<T> beanListHandler;
 
