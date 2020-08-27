@@ -6,7 +6,7 @@ import com.swingfrog.summer2.starter.annotation.SummerApplication;
 import com.swingfrog.summer2.starter.event.SummerContext;
 import com.swingfrog.summer2.starter.event.SummerListener;
 import test.demo.component.BaseComponent;
-import test.demo.component.ComponentA;
+import test.demo.component.ComponentE;
 
 /**
  * @author: toke
@@ -15,11 +15,11 @@ import test.demo.component.ComponentA;
 public class Bootstrap implements SummerListener {
 
     @Autowire
-    private ComponentA componentA;
+    private ComponentE componentE;
 
     @Override
     public void onStart(SummerContext context) {
-        componentA.a();
+        componentE.a();
         System.out.println();
         context.listBean(BaseComponent.class).forEach(BaseComponent::b);
     }

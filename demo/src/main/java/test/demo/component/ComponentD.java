@@ -1,6 +1,7 @@
 package test.demo.component;
 
 import com.swingfrog.summer2.core.ioc.annotation.Autowire;
+import com.swingfrog.summer2.core.ioc.annotation.Bean;
 import com.swingfrog.summer2.core.ioc.annotation.Component;
 
 /**
@@ -16,9 +17,9 @@ public class ComponentD extends AbstractComponent {
         this.componentA = componentA;
     }
 
-    @Override
-    public void a() {
-        super.a();
-        System.out.println(componentA);
+    @Bean
+    public ComponentE createComponentE() {
+        return new ComponentE(componentA);
     }
+
 }
