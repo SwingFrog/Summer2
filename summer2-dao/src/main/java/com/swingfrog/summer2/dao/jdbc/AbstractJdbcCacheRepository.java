@@ -24,12 +24,11 @@ import java.util.stream.Collectors;
 public abstract class AbstractJdbcCacheRepository<K, V> extends AbstractJdbcRepository<K, V> {
 
     private V EMPTY;
-    private final Cache<K, V> cache = CacheBuilder.newBuilder()
-            .expireAfterAccess(expireTime(), TimeUnit.MILLISECONDS)
-            .build();
+    private Cache<K, V> cache;
     private final Map<IndexMeta, Cache<String, Set<K>>> primaryKeyCacheMap = Maps.newConcurrentMap();
     private final Map<IndexMeta, Cache<String, Boolean>> primaryKeyCacheFinishMap = Maps.newConcurrentMap();
     private final AtomicLong listAllTimestamp = new AtomicLong(0);
+    long expireTime;
 
     // never expire if value less then zero
     protected abstract long expireTime();
@@ -37,13 +36,23 @@ public abstract class AbstractJdbcCacheRepository<K, V> extends AbstractJdbcRepo
     @Override
     void initialize(DataSource dataSource) {
         super.initialize(dataSource);
+        expireTime = expireTime();
         try {
             EMPTY = getEntityClass().newInstance();
         } catch (InstantiationException | IllegalAccessException e) {
             throw new JdbcRuntimeException("cache repository EMPTY not null");
         }
-        long expireTime = expireTime();
-        if (expireTime >= 0) {
+        if (isNeverExpire()) {
+            cache = CacheBuilder.newBuilder().build();
+            getTableMeta().getIndexMetas()
+                    .forEach(indexMeta -> {
+                        primaryKeyCacheMap.put(indexMeta, CacheBuilder.newBuilder().build());
+                        primaryKeyCacheFinishMap.put(indexMeta, CacheBuilder.newBuilder().build());
+                    });
+        } else {
+            cache = CacheBuilder.newBuilder()
+                    .expireAfterAccess(expireTime, TimeUnit.MILLISECONDS)
+                    .build();
             getTableMeta().getIndexMetas()
                     .forEach(indexMeta -> {
                         primaryKeyCacheMap.put(indexMeta, CacheBuilder.newBuilder()
@@ -53,13 +62,11 @@ public abstract class AbstractJdbcCacheRepository<K, V> extends AbstractJdbcRepo
                                 .expireAfterAccess(expireTime, TimeUnit.MILLISECONDS)
                                 .build());
                     });
-        } else {
-            getTableMeta().getIndexMetas()
-                    .forEach(indexMeta -> {
-                        primaryKeyCacheMap.put(indexMeta, CacheBuilder.newBuilder().build());
-                        primaryKeyCacheFinishMap.put(indexMeta, CacheBuilder.newBuilder().build());
-                    });
         }
+    }
+
+    boolean isNeverExpire() {
+        return expireTime < 0;
     }
 
     @SuppressWarnings("unchecked")
@@ -149,9 +156,9 @@ public abstract class AbstractJdbcCacheRepository<K, V> extends AbstractJdbcRepo
     @Override
     public List<V> listAll() {
         long time = System.currentTimeMillis();
-        if (time - expireTime() >= listAllTimestamp.get()) {
+        if (time - expireTime >= listAllTimestamp.get()) {
             synchronized (getListAllLock()) {
-                if (time - expireTime() >= listAllTimestamp.get()) {
+                if (time - expireTime >= listAllTimestamp.get()) {
                     super.listAll().forEach(value ->
                             addCache((K) JdbcValueGenerator.getPrimaryKeyValue(getTableMeta(), value), value));
                 }

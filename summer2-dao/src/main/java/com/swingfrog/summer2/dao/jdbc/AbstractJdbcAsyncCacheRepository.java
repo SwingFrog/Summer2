@@ -24,17 +24,18 @@ public abstract class AbstractJdbcAsyncCacheRepository<K, V> extends AbstractJdb
     private final Set<K> waitAdd = Sets.newConcurrentHashSet();
     private final Queue<Change<K, V>> waitChange = Queues.newConcurrentLinkedQueue();
     private final Map<K, Update<K, V>> waitUpdate = Maps.newConcurrentMap();
-    private final long delayTime = delayTime();
+    long delayTime;
 
     protected abstract long delayTime();
 
     @Override
     void initialize(DataSource dataSource) {
-        if (delayTime >= expireTime()) {
-            throw new JdbcRuntimeException(String.format("async cache repository delayTime[%s] must be less than expireTime[%s], entity -> %s",
-                    delayTime, expireTime(), getEntityClass().getName()));
-        }
         super.initialize(dataSource);
+        delayTime = delayTime();
+        if (!isNeverExpire() && delayTime >= expireTime) {
+            throw new JdbcRuntimeException(String.format("async cache repository delayTime[%s] must be less than expireTime[%s], entity -> %s",
+                    delayTime, expireTime, getEntityClass().getName()));
+        }
     }
 
     JdbcAsyncRepositoryProcessor.AsyncTask initializeAsync() {
