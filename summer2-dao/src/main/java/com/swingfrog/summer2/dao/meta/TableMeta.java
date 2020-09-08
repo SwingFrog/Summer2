@@ -4,6 +4,8 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
+import java.util.Objects;
+
 /**
  * @author: toke
  */
@@ -62,6 +64,26 @@ public class TableMeta {
 
     public ImmutableMap<String, ColumnMeta> getFieldToColumnMetas() {
         return fieldToColumnMetas;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        TableMeta tableMeta = (TableMeta) o;
+        return Objects.equals(name, tableMeta.name) &&
+                Objects.equals(comment, tableMeta.comment) &&
+                Objects.equals(charset, tableMeta.charset) &&
+                Objects.equals(collate, tableMeta.collate) &&
+                Objects.equals(indexMetas, tableMeta.indexMetas) &&
+                Objects.equals(primaryKeyMeta, tableMeta.primaryKeyMeta) &&
+                Objects.equals(columnMetas, tableMeta.columnMetas) &&
+                Objects.equals(fieldToColumnMetas, tableMeta.fieldToColumnMetas);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(name, comment, charset, collate, indexMetas, primaryKeyMeta, columnMetas, fieldToColumnMetas);
     }
 
     public static final class Builder {

@@ -3,6 +3,8 @@ package com.swingfrog.summer2.dao.meta;
 import com.google.common.collect.ImmutableSet;
 import com.swingfrog.summer2.dao.constant.IndexType;
 
+import java.util.Objects;
+
 /**
  * @author: toke
  */
@@ -41,6 +43,23 @@ public class IndexMeta {
 
     public boolean isAllReadOnly() {
         return allReadOnly;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        IndexMeta indexMeta = (IndexMeta) o;
+        return allReadOnly == indexMeta.allReadOnly &&
+                Objects.equals(name, indexMeta.name) &&
+                Objects.equals(columns, indexMeta.columns) &&
+                type == indexMeta.type &&
+                Objects.equals(fields, indexMeta.fields);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(name, columns, type, fields, allReadOnly);
     }
 
     public static final class Builder {

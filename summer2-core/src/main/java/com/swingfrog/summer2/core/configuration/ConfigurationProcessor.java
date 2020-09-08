@@ -12,11 +12,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Field;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Properties;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Function;
 
 /**
@@ -186,9 +182,9 @@ public class ConfigurationProcessor {
     }
 
     public void loadProperties(String defaultPropertyPath) {
-        Set<Object> configurations = iocProcessor.listBeanByAnnotation(Configuration.class);
-        Map<String, Properties> propertiesMap = new HashMap<>();
-        Set<InputStream> inputStreams = new HashSet<>();
+        List<Object> configurations = iocProcessor.listBeanByAnnotation(Configuration.class);
+        Map<String, Properties> propertiesMap = new HashMap<>(configurations.size());
+        List<InputStream> inputStreams = new ArrayList<>(configurations.size());
         try {
             for (Object configuration : configurations) {
                 final Class<?> targetClass = configuration.getClass();

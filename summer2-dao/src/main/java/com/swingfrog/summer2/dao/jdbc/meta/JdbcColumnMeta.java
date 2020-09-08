@@ -3,6 +3,8 @@ package com.swingfrog.summer2.dao.jdbc.meta;
 import com.swingfrog.summer2.dao.constant.ColumnType;
 import com.swingfrog.summer2.dao.meta.ColumnMeta;
 
+import java.util.Objects;
+
 /**
  * @author: toke
  */
@@ -90,4 +92,23 @@ public class JdbcColumnMeta {
             return false;
         return notNull == columnMeta.isNotNull();
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        JdbcColumnMeta that = (JdbcColumnMeta) o;
+        return length == that.length &&
+                notNull == that.notNull &&
+                Objects.equals(name, that.name) &&
+                Objects.equals(comment, that.comment) &&
+                type == that.type &&
+                Objects.equals(defaultValue, that.defaultValue);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(name, comment, type, length, defaultValue, notNull);
+    }
+
 }

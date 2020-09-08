@@ -4,6 +4,8 @@ import com.google.common.collect.ImmutableSet;
 import com.swingfrog.summer2.dao.constant.IndexType;
 import com.swingfrog.summer2.dao.meta.IndexMeta;
 
+import java.util.Objects;
+
 /**
  * @author: toke
  */
@@ -67,4 +69,20 @@ public class JdbcIndexMeta {
             return false;
         return type == indexMeta.getType();
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        JdbcIndexMeta that = (JdbcIndexMeta) o;
+        return Objects.equals(name, that.name) &&
+                Objects.equals(columns, that.columns) &&
+                type == that.type;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(name, columns, type);
+    }
+
 }

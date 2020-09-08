@@ -3,6 +3,7 @@ package com.swingfrog.summer2.starter.event;
 import com.swingfrog.summer2.core.ioc.Container;
 
 import java.lang.annotation.Annotation;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -22,12 +23,12 @@ public class SummerContext implements Container {
     }
 
     @Override
-    public <T> Set<T> listBean(Class<T> targetClass) {
+    public <T> List<T> listBean(Class<T> targetClass) {
         return container.listBean(targetClass);
     }
 
     @Override
-    public Set<Object> listBeanByAnnotation(Class<? extends Annotation> targetAnnotation) {
+    public List<Object> listBeanByAnnotation(Class<? extends Annotation> targetAnnotation) {
         return container.listBeanByAnnotation(targetAnnotation);
     }
 

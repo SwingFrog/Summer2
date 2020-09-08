@@ -1,5 +1,7 @@
 package com.swingfrog.summer2.dao.meta;
 
+import java.util.Objects;
+
 /**
  * @author: toke
  */
@@ -22,6 +24,20 @@ public class PrimaryKeyMeta extends ColumnMeta {
 
     public boolean isAutoIncrement() {
         return autoIncrement;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        if (!super.equals(o)) return false;
+        PrimaryKeyMeta that = (PrimaryKeyMeta) o;
+        return autoIncrement == that.autoIncrement;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(super.hashCode(), autoIncrement);
     }
 
     public static final class Builder {

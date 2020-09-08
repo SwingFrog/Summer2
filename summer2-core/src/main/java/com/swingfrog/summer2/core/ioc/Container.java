@@ -1,7 +1,7 @@
 package com.swingfrog.summer2.core.ioc;
 
 import java.lang.annotation.Annotation;
-import java.util.Set;
+import java.util.List;
 
 /**
  * @author: toke
@@ -9,7 +9,7 @@ import java.util.Set;
 public interface Container {
 
     <T> T getBean(Class<T> targetClass);
-    <T> Set<T> listBean(Class<T> targetClass);
-    Set<Object> listBeanByAnnotation(Class<? extends Annotation> targetAnnotation);
+    <T> List<T> listBean(Class<T> targetClass);
+    List<Object> listBeanByAnnotation(Class<? extends Annotation> targetAnnotation);
 
 }

@@ -23,7 +23,7 @@ public abstract class AbstractJdbcAsyncCacheRepository<K, V> extends AbstractJdb
 
     private final Set<K> waitAdd = Sets.newConcurrentHashSet();
     private final Queue<Change<K, V>> waitChange = Queues.newConcurrentLinkedQueue();
-    private final Map<V, Long> waitUpdate = Maps.newConcurrentMap();
+    private final Map<K, Update<K, V>> waitUpdate = Maps.newConcurrentMap();
     private final long delayTime = delayTime();
 
     protected abstract long delayTime();
@@ -63,13 +63,12 @@ public abstract class AbstractJdbcAsyncCacheRepository<K, V> extends AbstractJdb
                 }
             }
             long time = System.currentTimeMillis();
-            List<V> list = waitUpdate.entrySet().stream()
-                    .filter(entry -> force || time - entry.getValue() >= delayTime)
-                    .map(Map.Entry::getKey)
+            List<Update<K, V>> list = waitUpdate.values().stream()
+                    .filter(update -> force || time - update.time >= delayTime)
                     .collect(Collectors.toList());
             if (!list.isEmpty())
-                super.update(list);
-            list.stream().filter(k -> force || time - waitUpdate.get(k) >= delayTime).forEach(waitUpdate::remove);
+                super.update(list.stream().map(value -> value.value).collect(Collectors.toList()));
+            list.stream().filter(update -> force || time - update.time >= delayTime).forEach(update -> waitUpdate.remove(update.primaryKey));
         } catch (Exception e) {
             log.error(e.getMessage(), e);
         }
@@ -121,7 +120,7 @@ public abstract class AbstractJdbcAsyncCacheRepository<K, V> extends AbstractJdb
         if (get(primaryKey) == null)
             throw new JdbcRuntimeException(String.format("can't update primary key -> %s, entity -> %s", primaryKey, getEntityClass().getName()));
         updateCache(primaryKey, value);
-        waitUpdate.computeIfAbsent(value, k -> System.currentTimeMillis());
+        waitUpdate.computeIfAbsent(primaryKey, k -> Update.of(primaryKey, value, System.currentTimeMillis()));
     }
 
     @Override
@@ -155,6 +154,23 @@ public abstract class AbstractJdbcAsyncCacheRepository<K, V> extends AbstractJdb
         public static <K, V> Change<K, V> ofRemoveAll() {
             return new Change<>(null, null, ChangeFlag.REMOVE_ALL);
         }
+    }
+
+    private static class Update<K, V> {
+        final K primaryKey;
+        final V value;
+        final long time;
+
+        private Update(K primaryKey, V value, long time) {
+            this.primaryKey = primaryKey;
+            this.value = value;
+            this.time = time;
+        }
+
+        public static <K, V> Update<K, V> of(K primaryKey, V value, long time) {
+            return new Update<>(primaryKey, value, time);
+        }
+
     }
 
 }

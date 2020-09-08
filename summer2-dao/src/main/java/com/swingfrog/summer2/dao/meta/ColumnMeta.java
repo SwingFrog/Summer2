@@ -3,6 +3,7 @@ package com.swingfrog.summer2.dao.meta;
 import com.swingfrog.summer2.dao.constant.ColumnType;
 
 import java.lang.reflect.Field;
+import java.util.Objects;
 
 /**
  * @author: toke
@@ -68,6 +69,27 @@ public class ColumnMeta {
         return notNull;
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        ColumnMeta that = (ColumnMeta) o;
+        return readOnly == that.readOnly &&
+                length == that.length &&
+                notNull == that.notNull &&
+                Objects.equals(name, that.name) &&
+                Objects.equals(comment, that.comment) &&
+                type == that.type &&
+                Objects.equals(defaultValue, that.defaultValue) &&
+                Objects.equals(field, that.field) &&
+                Objects.equals(fieldName, that.fieldName);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(name, comment, type, readOnly, length, defaultValue, field, fieldName, notNull);
+    }
+
     public static final class Builder {
         private String name;
         private String comment;
@@ -130,4 +152,5 @@ public class ColumnMeta {
 
         public ColumnMeta build() { return new ColumnMeta(name, comment, type, readOnly, length, defaultValue, field, fieldName, notNull); }
     }
+
 }

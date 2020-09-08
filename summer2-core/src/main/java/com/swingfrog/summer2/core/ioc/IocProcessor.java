@@ -10,6 +10,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -62,20 +63,20 @@ public class IocProcessor implements Container {
     }
 
     @Override
-    public <T> Set<T> listBean(Class<T> targetClass) {
+    public <T> List<T> listBean(Class<T> targetClass) {
         Objects.requireNonNull(targetClass);
         return beans.stream()
                 .filter(targetClass::isInstance)
                 .map(targetClass::cast)
-                .collect(Collectors.toSet());
+                .collect(Collectors.toList());
     }
 
     @Override
-    public Set<Object> listBeanByAnnotation(Class<? extends Annotation> targetAnnotation) {
+    public List<Object> listBeanByAnnotation(Class<? extends Annotation> targetAnnotation) {
         Objects.requireNonNull(targetAnnotation);
         return beans.stream()
                 .filter(bean -> hasAnnotation(bean.getClass(), targetAnnotation))
-                .collect(Collectors.toSet());
+                .collect(Collectors.toList());
     }
 
     private boolean hasAnnotation(Class<?> targetClass, Class<? extends Annotation> targetAnnotation) {
